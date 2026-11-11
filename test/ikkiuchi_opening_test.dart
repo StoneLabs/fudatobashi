@@ -65,7 +65,7 @@ void main() {
         sides: sides, stack: others, tobiRating: rating, seed: seed);
   }
 
-  const words = IkkiuchiMatchWords(kimariji: _kimariji, call: _call, karafuda: 'からふだ');
+  const words = IkkiuchiMatchWords(call: _call);
 
   IkkiuchiMatchFlow match(int seed, {double rating = 2000, int perSide = 25, int rows = 3, Duration? memorise}) =>
       IkkiuchiMatchFlow(dealt(seed, rating: rating, perSide: perSide, rows: rows),
@@ -437,7 +437,5 @@ void main() {
     });
   });
 }
-
-String _kimariji(int id) => '$id';
 
 IkkiuchiCall _call(int id) => IkkiuchiCall(id, const ['か']);

@@ -230,9 +230,9 @@ class IkkiuchiDebugTools extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _chip(stageName(stage)),
+          IkkiuchiReadoutChip(stageName(stage)),
           const SizedBox(height: IkkiuchiToolsStyle.readoutGap),
-          _chip(ratingName(rating)),
+          IkkiuchiReadoutChip(ratingName(rating)),
           const SizedBox(height: IkkiuchiToolsStyle.readoutGap),
           Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             _slider(),
@@ -240,16 +240,6 @@ class IkkiuchiDebugTools extends StatelessWidget {
             _panel(),
           ]),
         ],
-      );
-
-  static final _readout = debugMono.copyWith(fontSize: IkkiuchiToolsStyle.readoutFont, color: IkkiuchiToolsStyle.readoutInk);
-
-  static Widget _chip(String text) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: IkkiuchiToolsStyle.readoutFill,
-          borderRadius: BorderRadius.circular(IkkiuchiToolsStyle.gamePanelRadius),
-        ),
-        child: Padding(padding: IkkiuchiToolsStyle.readoutPadding, child: Text(text, style: _readout)),
       );
 
   /// The slider standing on end: a quarter turn puts its low end on top.
@@ -344,5 +334,23 @@ class IkkiuchiDebugTools extends StatelessWidget {
           ),
           child: Text(label, style: _label),
         ),
+      );
+}
+
+/// A line of the developer's readout over a board, on a see-through chip.
+class IkkiuchiReadoutChip extends StatelessWidget {
+  const IkkiuchiReadoutChip(this.text, {super.key});
+
+  final String text;
+
+  static final _style = debugMono.copyWith(fontSize: IkkiuchiToolsStyle.readoutFont, color: IkkiuchiToolsStyle.readoutInk);
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: IkkiuchiToolsStyle.readoutFill,
+          borderRadius: BorderRadius.circular(IkkiuchiToolsStyle.gamePanelRadius),
+        ),
+        child: Padding(padding: IkkiuchiToolsStyle.readoutPadding, child: Text(text, style: _style)),
       );
 }

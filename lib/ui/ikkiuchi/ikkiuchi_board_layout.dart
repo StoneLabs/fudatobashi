@@ -263,6 +263,10 @@ class IkkiuchiBoardLayout {
       ? Rect.fromLTRB(field.left, band.top, field.right, band.bottom)
       : Rect.fromCenter(center: band.center, width: band.width - 2 * _bandEnd, height: IkkiuchiBoardStyle.words);
 
+  /// How the call looks there: on a see-through strip in landscape's gap,
+  /// in ink on the band's paper in portrait.
+  IkkiuchiCallLook get callLook => landscape ? IkkiuchiCallStyle.inGap : IkkiuchiCallStyle.onBand;
+
   /// The room the game column's parts take at each end of the band, and
   /// the gap from them.
   static const _bandEnd = IkkiuchiColumnStyle.edge + 2 * (IkkiuchiColumnStyle.width + IkkiuchiColumnStyle.bandGap);

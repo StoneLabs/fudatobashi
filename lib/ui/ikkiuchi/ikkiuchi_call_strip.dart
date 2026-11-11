@@ -7,16 +7,18 @@ import '../../config/vector_art.dart';
 import '../manga/vector.dart';
 import 'ikkiuchi_reader.dart';
 
-/// The call in the gap between the sides in landscape: paper words on a
-/// see-through strip that fades out toward both ends, as tall as it is
-/// laid out. It shows the [reader]'s call sound by sound as each is heard,
-/// each kana opening its room and popping in so the words grow from the
-/// middle; or, instead of the call, a [prompt]: its title and what to do.
-/// Once nothing is read the last words fade out.
+/// The call between the sides, in the [look] the board has there: words
+/// on a strip that fades out toward both ends, as tall as it is laid out.
+/// It shows the [reader]'s call sound by sound as each is heard, each kana
+/// opening its room and popping in so the words grow from the middle, and
+/// nothing more: not whose card it is, nor that it is a からふだ. Instead of
+/// the call, a [prompt]: its title and what to do; or the [shimonoku] being
+/// read. Once nothing is read the last words fade out.
 class IkkiuchiCallStrip extends StatefulWidget {
-  const IkkiuchiCallStrip({super.key, required this.reader, this.prompt, this.shimonoku});
+  const IkkiuchiCallStrip({super.key, required this.reader, required this.look, this.prompt, this.shimonoku});
 
   final IkkiuchiReader reader;
+  final IkkiuchiCallLook look;
   final ({String title, String line})? prompt;
   final ({String word, double share})? shimonoku;
 
@@ -37,7 +39,7 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
           return AnimatedOpacity(
             opacity: words == null ? 0 : 1,
             duration: IkkiuchiCallStyle.fadeOut,
-            child: _shown == null ? const SizedBox.shrink() : IkkiuchiStrip(child: _shown!),
+            child: _shown == null ? const SizedBox.shrink() : IkkiuchiStrip(look: widget.look, child: _shown!),
           );
         },
       );
@@ -45,8 +47,11 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
   /// The words to show now: the 下の句, the prompt, or the sounds heard of
   /// the call; null with none.
   Widget? _words() {
-    if (widget.shimonoku case (:final word, :final share)) return IkkiuchiShimonokuWords(word: word, share: share);
-    if (widget.prompt case (:final title, :final line)) return _Prompt(title: title, line: line);
+    final look = widget.look;
+    if (widget.shimonoku case (:final word, :final share)) {
+      return IkkiuchiShimonokuWords(word: word, share: share, ink: look.ink);
+    }
+    if (widget.prompt case (:final title, :final line)) return _Prompt(title: title, line: line, look: look);
     final reader = widget.reader;
     final call = reader.call;
     if (call == null || reader.heard == 0) return null;
@@ -54,73 +59,72 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
       key: ValueKey(reader.serial),
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < reader.heard; i++) _Sound(call.sounds[i], key: ValueKey(i)),
+        for (var i = 0; i < reader.heard; i++) _Sound(call.sounds[i], ink: look.ink, key: ValueKey(i)),
       ],
     );
   }
 
 }
 
-/// The see-through strip behind the words, solid under them and
+/// The strip behind the words in [look]'s fill, solid under them and
 /// [IkkiuchiCallStyle.inset] beyond, fading out over
-/// [IkkiuchiCallStyle.fade] at each end.
+/// [IkkiuchiCallStyle.fade] at each end; the words shrunk to fit where they
+/// are wider than its room.
 class IkkiuchiStrip extends StatelessWidget {
-  const IkkiuchiStrip({super.key, required this.child});
+  const IkkiuchiStrip({super.key, required this.look, required this.child});
 
+  final IkkiuchiCallLook look;
   final Widget child;
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-        painter: const _StripPainter(),
+        painter: _StripPainter(look.fill),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: IkkiuchiCallStyle.fade + IkkiuchiCallStyle.inset),
-          child: Center(widthFactor: 1, child: child),
+          child: Center(widthFactor: 1, child: FittedBox(fit: BoxFit.scaleDown, child: child)),
         ),
       );
 }
 
 class _StripPainter extends CustomPainter {
-  const _StripPainter();
+  const _StripPainter(this.fill);
+
+  final Color fill;
 
   @override
   void paint(Canvas canvas, Size size) {
     final fade = IkkiuchiCallStyle.fade / size.width;
-    final clear = IkkiuchiCallStyle.fill.withValues(alpha: 0);
+    final clear = fill.withValues(alpha: 0);
     final rect = Offset.zero & size;
     canvas.drawRect(
       rect,
       Paint()
         ..shader = LinearGradient(
-          colors: [clear, IkkiuchiCallStyle.fill, IkkiuchiCallStyle.fill, clear],
+          colors: [clear, fill, fill, clear],
           stops: [0, fade, 1 - fade, 1],
         ).createShader(rect),
     );
   }
 
   @override
-  bool shouldRepaint(_StripPainter old) => false;
+  bool shouldRepaint(_StripPainter old) => old.fill != fill;
 }
 
-/// A sound of the call as it is heard: its room opens from nothing as it
-/// pops in from [IkkiuchiCallStyle.kanaPop] its size.
+/// A sound of the call as it is heard, in [ink]: its room opens from
+/// nothing as it pops in from [IkkiuchiCallStyle.kanaPop] its size.
 class _Sound extends StatelessWidget {
-  const _Sound(this.text, {super.key});
+  const _Sound(this.text, {super.key, required this.ink});
 
   final String text;
-
-  static const _style = TextStyle(
-    fontFamily: Fonts.display,
-    fontSize: IkkiuchiCallStyle.kimariji,
-    height: 1,
-    color: IkkiuchiCallStyle.ink,
-  );
+  final Color ink;
 
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),
         duration: IkkiuchiCallStyle.kanaIn,
         curve: IkkiuchiCallStyle.kanaCurve,
-        child: Text(text, style: _style),
+        child: Text(text,
+            style: TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiCallStyle.kimariji, height: 1, color: ink)),
         builder: (context, t, child) => Align(
           widthFactor: t,
           child: Opacity(
@@ -131,39 +135,48 @@ class _Sound extends StatelessWidget {
       );
 }
 
-/// A prompt: its title in display lettering, a dot, then what to do.
+/// A prompt: its title in display lettering, then what to do; beside it
+/// after a dot, or under it where the [look] has them stacked.
 class _Prompt extends StatelessWidget {
-  const _Prompt({required this.title, required this.line});
+  const _Prompt({required this.title, required this.line, required this.look});
 
   final String title, line;
+  final IkkiuchiCallLook look;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(title,
-            style: const TextStyle(
-                fontFamily: Fonts.display, fontSize: IkkiuchiCallStyle.title, height: 1, color: IkkiuchiCallStyle.ink)),
-        const SizedBox(width: IkkiuchiCallStyle.dotGap),
-        const Text(IkkiuchiCallStyle.dot,
-            style: TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiCallStyle.line, color: IkkiuchiCallStyle.lineInk)),
-        const SizedBox(width: IkkiuchiCallStyle.dotGap),
-        Text(line,
-            maxLines: 1,
-            softWrap: false,
-            style: const TextStyle(
-                fontFamily: Fonts.ui,
-                fontWeight: Weights.black,
-                fontSize: IkkiuchiCallStyle.line,
-                height: 1,
-                color: IkkiuchiCallStyle.lineInk)),
-      ]);
+  Widget build(BuildContext context) {
+    final heading = Text(title,
+        style: TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiCallStyle.title, height: 1, color: look.ink));
+    final what = Text(line,
+        maxLines: 1,
+        softWrap: false,
+        style: TextStyle(
+            fontFamily: Fonts.ui,
+            fontWeight: Weights.black,
+            fontSize: IkkiuchiCallStyle.line,
+            height: 1,
+            color: look.lineInk));
+    if (look.stacked) {
+      return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [heading, const SizedBox(height: IkkiuchiCallStyle.stackGap), what]);
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      heading,
+      const SizedBox(width: IkkiuchiCallStyle.dotGap),
+      Text(IkkiuchiCallStyle.dot,
+          style: TextStyle(fontWeight: Weights.black, fontSize: IkkiuchiCallStyle.line, color: look.lineInk)),
+      const SizedBox(width: IkkiuchiCallStyle.dotGap),
+      what,
+    ]);
+  }
 }
 
 /// The 下の句 being read: its [word] and the 余韻 mark lying along the line,
 /// wiped away from the left by [share] (0 all shown, 1 none) of it played,
 /// in [ink].
 class IkkiuchiShimonokuWords extends StatelessWidget {
-  const IkkiuchiShimonokuWords(
-      {super.key, required this.word, required this.share, this.ink = IkkiuchiCallStyle.ink});
+  const IkkiuchiShimonokuWords({super.key, required this.word, required this.share, required this.ink});
 
   final String word;
   final double share;

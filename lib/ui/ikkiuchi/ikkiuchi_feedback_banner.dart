@@ -4,17 +4,18 @@ import '../../config/config.dart';
 import '../../config/design.dart';
 import 'ikkiuchi_call_strip.dart';
 
-/// How a read ended, [text] on the call's strip ([IkkiuchiStrip]), shrunk
-/// to fit the room it is given, [at] ms into its showing: it slides in
-/// from the left fading in
+/// How a read ended, [text] on the call's strip ([IkkiuchiStrip]) in the
+/// call's [look], shrunk to fit the room it is given, [at] ms into its
+/// showing: it slides in from the left fading in
 /// ([IkkiuchiMatchTuning.feedbackIn]), stays ([IkkiuchiMatchTuning.feedbackHold]),
 /// and slides on out to the right fading out
 /// ([IkkiuchiMatchTuning.feedbackOut]).
 class IkkiuchiFeedbackBanner extends StatelessWidget {
-  const IkkiuchiFeedbackBanner({super.key, required this.text, required this.at});
+  const IkkiuchiFeedbackBanner({super.key, required this.text, required this.at, required this.look});
 
   final String text;
   final double at;
+  final IkkiuchiCallLook look;
 
   static double _ms(Duration d) => d.inMicroseconds / Duration.microsecondsPerMillisecond;
 
@@ -36,19 +37,12 @@ class IkkiuchiFeedbackBanner extends StatelessWidget {
       child: Transform.translate(
         offset: Offset(place * IkkiuchiCallStyle.feedbackSlide, 0),
         child: IkkiuchiStrip(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              text,
-              maxLines: 1,
-              softWrap: false,
-              style: const TextStyle(
-                fontFamily: Fonts.display,
-                fontSize: IkkiuchiCallStyle.feedback,
-                height: 1,
-                color: IkkiuchiCallStyle.ink,
-              ),
-            ),
+          look: look,
+          child: Text(
+            text,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(fontFamily: Fonts.display, fontSize: IkkiuchiCallStyle.feedback, height: 1, color: look.ink),
           ),
         ),
       ),

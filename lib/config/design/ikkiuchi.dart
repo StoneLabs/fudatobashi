@@ -10,9 +10,8 @@ abstract final class IkkiuchiBoardStyle {
   static const double bottomGap = 16;
 
   /// The band between the sides in portrait: its height, room for the game
-  /// column's parts along it (`IkkiuchiColumnStyle`) with the called card's
-  /// kimariji and a note under it in its middle, [words] tall there; the
-  /// ink rules along it, its fill, and the kimariji.
+  /// column's parts along it (`IkkiuchiColumnStyle`) with the call in its
+  /// middle, [words] tall there; the ink rules along it, and its fill.
   static const double band = 106;
   static const double words = 40;
   static const double bandRule = 3;
@@ -21,27 +20,6 @@ abstract final class IkkiuchiBoardStyle {
   static const double landscapeGap = 17;
   static const Color bandFill = Palette.paper;
   static const Color bandRuleColor = Palette.ink;
-  static const double kimariji = 20;
-  static const Color kimarijiColor = Palette.ink;
-
-  /// A note under the kimariji (the developer's readout), [noteGap] below.
-  static const double noteFont = 10;
-  static const double noteGap = 2;
-  static const Color noteColor = Palette.mute;
-  static const String noteEllipsis = '…';
-
-  /// Words on the band in portrait instead of a call, as while a card is
-  /// sent or the memory time runs: a title over a line, [wordsGap] apart.
-  static const double wordsTitle = 20;
-  static const double wordsLine = 10;
-  static const double wordsGap = 2;
-  static const Color wordsTitleInk = Palette.ink;
-  static const Color wordsLineInk = Palette.mute;
-
-  /// A からふだ's kimariji, and the tag in front of it, [karafudaGap] apart.
-  static const Color karafudaColor = Palette.inkShadow;
-  static const double karafudaTag = 10;
-  static const String karafudaGap = '  ';
 
   /// A card of a 3-row match is never wider than [maxCardW]. A 1- or 2-row
   /// match keeps the 3-row field, as wide and, in landscape, as tall, and
@@ -277,20 +255,35 @@ abstract final class IkkiuchiTobiTagStyle {
   static const Color name = Palette.sun;
 }
 
-/// The call in the gap between the sides in landscape (`IkkiuchiCallStrip`):
-/// paper words on a see-through [fill] that fades out over [fade] toward
-/// both ends, [inset] solid beyond the words, reaching [bleed] into the
-/// rows either side. The kimariji grows kana by kana in [kimariji]
-/// lettering, each kana opening its room and popping in from [kanaPop] its
-/// size over [kanaIn] ([kanaCurve]); the strip fades out over [fadeOut]
-/// once nothing is read. A prompt is its [title] in display lettering,
-/// [dot], then what to do in [line], [lineInk]. dp.
+/// How the call looks where the board has it (`IkkiuchiCallStrip`): the
+/// strip's [fill] behind the words, the words in [ink] and a prompt's line
+/// in [lineInk]; a prompt's title over its line,
+/// [IkkiuchiCallStyle.stackGap] apart, where [stacked], else beside it.
+class IkkiuchiCallLook {
+  const IkkiuchiCallLook({required this.fill, required this.ink, required this.lineInk, this.stacked = false});
+
+  final Color fill, ink, lineInk;
+  final bool stacked;
+}
+
+/// The call between the sides (`IkkiuchiCallStrip`): words on a strip that
+/// fades out over [fade] toward both ends, [inset] solid beyond the words,
+/// reaching [bleed] into the rows either side; in landscape paper words on
+/// a see-through strip in the gap ([inGap]), in portrait ink words on the
+/// band's paper ([onBand]), where a prompt's title lies over its line. The
+/// kimariji grows kana by kana in [kimariji] lettering, each kana opening
+/// its room and popping in from [kanaPop] its size over [kanaIn]
+/// ([kanaCurve]); the strip fades out over [fadeOut] once nothing is read.
+/// A prompt is its [title] in display lettering, [dot], then what to do in
+/// [line]. dp.
 abstract final class IkkiuchiCallStyle {
   static const double bleed = 2.5;
-  static const Color fill = Color(0xC4000000);
+  static const IkkiuchiCallLook inGap =
+      IkkiuchiCallLook(fill: Color(0xC4000000), ink: Palette.paper, lineInk: Color(0xE6FFFFFF));
+  static const IkkiuchiCallLook onBand =
+      IkkiuchiCallLook(fill: Color(0x00FFFFFF), ink: Palette.ink, lineInk: Palette.mute, stacked: true);
   static const double fade = 40;
   static const double inset = 8;
-  static const Color ink = Palette.paper;
   static const double kimariji = 21;
   static const Duration kanaIn = Duration(milliseconds: 150);
   static const Curve kanaCurve = Curves.easeOutCubic;
@@ -300,7 +293,7 @@ abstract final class IkkiuchiCallStyle {
   static const String dot = '·';
   static const double dotGap = 7;
   static const double line = 12;
-  static const Color lineInk = Color(0xE6FFFFFF);
+  static const double stackGap = 2;
 
   /// The 下の句 being read: its word in [kimariji] lettering, [shimonokuGap]
   /// before the 余韻 mark, [shimonokuTail] long and as tall as the lettering,

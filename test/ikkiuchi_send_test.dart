@@ -658,7 +658,7 @@ void main() {
         final sides = dealt(5);
         final scene = sceneOf(sides);
         final read = sides.playerCards.first;
-        scene.callCard(read, poems[read].kimariji);
+        scene.callCard(read);
         // The finger is down in the band as it starts, then goes onto a
         // card of Tobi's, which a touch while reading faults on.
         final band = scene.layout.band.center;
@@ -991,7 +991,7 @@ void main() {
     test('a middle card is taken by the finger, and once knocked glides home', () {
       final scene = sceneOf(dealtWithMiddle(3, 1));
       final m = scene.sides!.player[middleRow.index].middle.single;
-      scene.callCard(m, '');
+      scene.callCard(m);
       final home = scene.board.cards.card(m).box;
       final at = Offset(home.centre.x, home.centre.y);
       scene.pointer(PointerDownEvent(pointer: 1, position: at));

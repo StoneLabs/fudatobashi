@@ -30,6 +30,7 @@ import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/ui/debug/ikkiuchi_debug_game.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_call_strip.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_feedback_banner.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_board.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
@@ -453,7 +454,8 @@ void main() {
         }
         await run(tester, length * 0.3 + 100);
         expect(stage(tester), IkkiuchiStage.breakAfterShimonoku);
-        if (!landscape) expect(find.byType(IkkiuchiShimonokuWords), findsNothing, reason: 'gone with the 下の句');
+        final strip = find.ancestor(of: find.byType(IkkiuchiShimonokuWords), matching: find.byType(AnimatedOpacity));
+        expect(tester.widget<AnimatedOpacity>(strip.first).opacity, 0, reason: 'fading out with the 下の句');
         await tester.pumpWidget(const SizedBox());
       });
     }
@@ -1111,6 +1113,39 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    // A からふだ is read as any card, its sounds on the strip and nothing
+    // more, in either layout; once the read is over the banner names it.
+    for (final landscape in [true, false]) {
+      final dir = landscape ? 'landscape' : 'portrait';
+      testWidgets('a からふだ is never named while read, only by the banner after, in $dir', (tester) async {
+        final p = await open(tester);
+        await show(tester, p, IkkiuchiDebugGame(seed: 6, landscape: landscape));
+        game(tester).setRating(null);
+        await tester.tap(tool(IkkiuchiToolsStyle.karafudaLabel));
+        await tester.tap(tool(IkkiuchiToolsStyle.startLabel));
+        await runUntil(tester, () => stage(tester) == IkkiuchiStage.kaminoku);
+        final f = flow(tester), s = f.scene, call = s.reader.call!;
+        expect(s.board.called, isNull, reason: 'a からふだ');
+        final named = find.textContaining('からふだ');
+        await run(tester, call.decidedAt + 50);
+        for (final sound in call.sounds) {
+          expect(find.descendant(of: find.byType(IkkiuchiCallStrip), matching: find.text(sound)), findsWidgets,
+              reason: 'its sounds shown as they are heard');
+        }
+        await capture(tester, 'karafuda_${dir}_read');
+        while (f.stage == IkkiuchiStage.waitingForHit) {
+          expect(named, findsNothing, reason: 'not named while it is read');
+          await run(tester, 250);
+        }
+        await runUntil(tester, () => f.stage == IkkiuchiStage.feedback);
+        await run(tester, IkkiuchiMatchTuning.feedbackIn.inMilliseconds + 50.0);
+        expect(find.descendant(of: find.byType(IkkiuchiFeedbackBanner), matching: named), findsOneWidget,
+            reason: 'named by the banner once the read is over');
+        await capture(tester, 'karafuda_${dir}_banner');
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
     testWidgets('空 makes the next read a からふだ, which ends after its pause', (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiDebugGame(seed: 6));
@@ -1120,7 +1155,6 @@ void main() {
       await runUntil(tester, () => stage(tester) == IkkiuchiStage.kaminoku);
       final s = flow(tester).scene;
       expect(s.board.called, isNull, reason: 'a からふだ');
-      expect(s.karafuda, 'からふだ');
       await runUntil(tester, () => stage(tester) == IkkiuchiStage.waitingForGo);
       expect(s.reader.call, isNull);
       await tester.pumpWidget(const SizedBox());

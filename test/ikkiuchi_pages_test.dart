@@ -403,11 +403,12 @@ void main() {
       final card = playerCard(s);
       await tapBoard(tester, s.board.cards.card(card).box.centre);
       expect(s.board.read?.called, card, reason: 'a tap reads the card under it');
-      for (var i = 0; i < 200 && s.note == null; i++) {
+      String readout() => tester.state<IkkiuchiStrikesPageState>(find.byType(IkkiuchiStrikesPage)).readout;
+      for (var i = 0; i < 200 && readout().isEmpty; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
-      expect(s.note, contains('reaction'), reason: 'his reaction and reach on the band once he struck');
-      expect(s.note, contains('reach'));
+      expect(readout(), contains('reaction'), reason: 'his reaction and reach over the board once he struck');
+      expect(readout(), contains('reach'));
       expect(s.board.cards.card(card).taken, isTrue);
       expect(s.board.faults, isEmpty);
 
@@ -552,7 +553,7 @@ void main() {
       final onField = s.board.field.keys.toSet();
       final away = poems.all.map((poem) => poem.id).firstWhere((id) => !onField.contains(id));
       final touched = playerCard(s);
-      s.board.call(IkkiuchiRead(
+      s.callKarafuda(away, tobi: IkkiuchiRead(
         called: away,
         onField: false,
         move: IkkiuchiMove.whip,
@@ -561,7 +562,6 @@ void main() {
         wrong: touched,
         slip: IkkiuchiSlip.stray,
       ));
-      s.show(poems[away].kimariji, karafuda: 'からふだ');
       await tester.pump(frame);
       final strike = s.board.runs.last.strike;
       await pumpTo(tester, strike.liveUntil + 200);

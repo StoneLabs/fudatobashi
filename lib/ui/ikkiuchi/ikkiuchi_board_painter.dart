@@ -20,8 +20,8 @@ import 'ikkiuchi_send_layer.dart';
 import 'ikkiuchi_tobi_art.dart';
 
 /// Paints the whole board in one go from its [scene]: the field's cards
-/// (cached faces), the band over them, Tobi with his moving arm and any
-/// card in his hand, and the effects.
+/// (cached faces), the band over them in portrait, Tobi with his moving
+/// arm and any card in his hand, and the effects.
 class IkkiuchiBoardPainter extends CustomPainter {
   IkkiuchiBoardPainter(this.scene, {required this.pixelRatio}) : super(repaint: scene);
 
@@ -121,15 +121,6 @@ class IkkiuchiBoardPainter extends CustomPainter {
     canvas
       ..drawRect(Rect.fromLTWH(band.left, band.top, band.width, r), rule)
       ..drawRect(Rect.fromLTWH(band.left, band.bottom - r, band.width, r), rule);
-    final text = scene.bandText;
-    if (text == null) return;
-    // The words were set for the band where the layout has it.
-    final shift = band.center - scene.layout.band.center;
-    canvas
-      ..save()
-      ..translate(shift.dx, shift.dy)
-      ..drawPicture(text)
-      ..restore();
   }
 
   void _paintTobi(Canvas canvas, IkkiuchiBoard board) {

@@ -14,18 +14,16 @@ import 'ikkiuchi_match_flow.dart';
 import 'ikkiuchi_send_flow.dart';
 
 /// The call over the board, in board dp, moving with the board as it is
-/// laid out afresh, where the layout has it ([IkkiuchiBoardScene.words]):
-/// in landscape the strip in the gap between the sides, centred on the
-/// field ([IkkiuchiCallStrip]), reading the scene's call, or saying what to
-/// do while a card is sent or the player moves their cards, or, with a
-/// [flow], the time left of its memory time, or the 下の句; in portrait the
-/// same words on the band, a title over a line, or the 下の句 in ink, the
-/// call itself painted there by the board. With a [flow], how each read
-/// ended over it ([IkkiuchiFeedbackBanner]), its words as wide as the
-/// call's room at most, its strip reaching past it. It takes no touches;
-/// it lies over the cards and under the game column and what a 送り札 or
-/// 並べ替え draws over them (`IkkiuchiBoardView.overCards`), so a dragged
-/// card rides over it.
+/// laid out afresh, where the layout has it ([IkkiuchiBoardScene.words])
+/// and in its look ([IkkiuchiBoardLayout.callLook]): the strip
+/// ([IkkiuchiCallStrip]) reading the scene's call, or saying what to do
+/// while a card is sent or the player moves their cards, or, with a
+/// [flow], the time left of its memory time, or the 下の句; and with a
+/// [flow], how each read ended ([IkkiuchiFeedbackBanner]). Their words are
+/// as wide as the call's room at most, their strip reaching past it. It
+/// takes no touches; it lies over the cards and under the game column and
+/// what a 送り札 or 並べ替え draws over them (`IkkiuchiBoardView.overCards`),
+/// so a dragged card rides over it.
 class IkkiuchiCallLayer extends StatelessWidget {
   const IkkiuchiCallLayer({super.key, required this.scene, this.flow});
 
@@ -36,42 +34,18 @@ class IkkiuchiCallLayer extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: Listenable.merge([scene, flow]),
         builder: (context, _) {
-          final s = S.of(context), words = scene.words, flow = this.flow;
+          final s = S.of(context), words = scene.words, look = scene.layout.callLook, flow = this.flow;
           const bleed = IkkiuchiCallStyle.bleed, padding = IkkiuchiCallStyle.fade + IkkiuchiCallStyle.inset;
-          final prompt = _prompt(s), shimonoku = flow?.shimonoku(s);
-          // [child] centred on [rect], with the bleed above and below,
-          // shrunk to fit it.
-          Widget over(Rect rect, Widget child) => Positioned.fromRect(
-                rect: Rect.fromLTRB(rect.left, rect.top - bleed, rect.right, rect.bottom + bleed),
-                child: IgnorePointer(child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: child))),
-              );
+          final room = Rect.fromLTRB(words.left - padding, words.top - bleed, words.right + padding, words.bottom + bleed);
+          Widget over(Widget child) => Positioned.fromRect(rect: room, child: IgnorePointer(child: Center(child: child)));
           return Stack(children: [
-            over(
-              words,
-              scene.layout.landscape
-                  ? SizedBox(
-                      height: words.height + 2 * bleed,
-                      child: IkkiuchiCallStrip(reader: scene.reader, prompt: prompt, shimonoku: shimonoku),
-                    )
-                  : switch ((shimonoku, prompt)) {
-                      ((:final word, :final share), _) =>
-                        IkkiuchiShimonokuWords(word: word, share: share, ink: IkkiuchiBoardStyle.wordsTitleInk),
-                      (_, (:final title, :final line)) => _BandWords(title: title, line: line),
-                      _ => const SizedBox.shrink(),
-                    },
-            ),
+            over(IkkiuchiCallStrip(reader: scene.reader, look: look, prompt: _prompt(s), shimonoku: flow?.shimonoku(s))),
             if (flow?.feedback case final end? when flow!.stage == IkkiuchiStage.feedback)
-              Positioned.fromRect(
-                rect: Rect.fromLTRB(words.left - padding, words.top - bleed, words.right + padding, words.bottom + bleed),
-                child: IgnorePointer(
-                  child: Center(
-                    child: IkkiuchiFeedbackBanner(
-                      text: s.ikkiuchiFeedback(end.callouts),
-                      at: IkkiuchiMatchTuning.feedback.inMicroseconds / Duration.microsecondsPerMillisecond - flow.left,
-                    ),
-                  ),
-                ),
-              ),
+              over(IkkiuchiFeedbackBanner(
+                text: s.ikkiuchiFeedback(end.callouts),
+                at: IkkiuchiMatchTuning.feedback.inMicroseconds / Duration.microsecondsPerMillisecond - flow.left,
+                look: look,
+              )),
           ]);
         },
       );
@@ -170,31 +144,6 @@ class IkkiuchiColumnLayer extends StatelessWidget {
       ),
     ];
   }
-}
-
-/// Words on the band in portrait in place of the call: a title over a line
-/// saying what goes on.
-class _BandWords extends StatelessWidget {
-  const _BandWords({required this.title, required this.line});
-
-  final String title, line;
-
-  @override
-  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(title,
-            style: const TextStyle(
-                fontFamily: Fonts.display,
-                fontSize: IkkiuchiBoardStyle.wordsTitle,
-                height: 1,
-                color: IkkiuchiBoardStyle.wordsTitleInk)),
-        const SizedBox(height: IkkiuchiBoardStyle.wordsGap),
-        Text(line,
-            style: const TextStyle(
-                fontFamily: Fonts.ui,
-                fontSize: IkkiuchiBoardStyle.wordsLine,
-                height: 1,
-                color: IkkiuchiBoardStyle.wordsLineInk)),
-      ]);
 }
 
 /// [ms] as minutes and seconds, the seconds rounded up: 14:57.

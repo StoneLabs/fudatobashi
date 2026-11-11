@@ -21,20 +21,14 @@ import 'ikkiuchi_board_scene.dart';
 import 'ikkiuchi_reader.dart';
 import 'ikkiuchi_send_flow.dart';
 
-/// What a match reads out in the player's script: each card's kimariji and
-/// call, and a からふだ's tag.
+/// What a match reads out in the player's script: each card's call.
 class IkkiuchiMatchWords {
-  const IkkiuchiMatchWords({required this.kimariji, required this.call, required this.karafuda});
+  const IkkiuchiMatchWords({required this.call});
 
-  factory IkkiuchiMatchWords.of(BuildContext context) => IkkiuchiMatchWords(
-        kimariji: (id) => kimarijiFor(context, id),
-        call: (id) => IkkiuchiReader.callFor(context, id),
-        karafuda: S.of(context).ikkiuchiKarafuda,
-      );
+  factory IkkiuchiMatchWords.of(BuildContext context) =>
+      IkkiuchiMatchWords(call: (id) => IkkiuchiReader.callFor(context, id));
 
-  final String Function(int id) kimariji;
   final IkkiuchiCall Function(int id) call;
-  final String karafuda;
 }
 
 /// A match (一騎打ち) run on a board scene, through its stages
@@ -441,9 +435,9 @@ class IkkiuchiMatchFlow extends ChangeNotifier {
     _decidedAt = board.now + call.decidedAt;
     _readField = sides.field;
     if (onField) {
-      scene.callCard(id, words.kimariji(id), call: call, tobi: tobi);
+      scene.callCard(id, call: call, tobi: tobi);
     } else {
-      scene.callKarafuda(id, words.kimariji(id), tag: words.karafuda, call: call, tobi: tobi);
+      scene.callKarafuda(id, call: call, tobi: tobi);
     }
     if (!markCalled) scene.mark(null);
     unawaited(sounds.playKimarijiVoice(id));

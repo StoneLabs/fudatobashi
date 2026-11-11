@@ -16,8 +16,11 @@ import '../../l10n/strings.dart';
 import '../ikkiuchi/ikkiuchi_board_painter.dart';
 import '../ikkiuchi/ikkiuchi_board_scene.dart';
 import '../ikkiuchi/ikkiuchi_dealer.dart';
+import '../ikkiuchi/ikkiuchi_match_layers.dart';
+import '../ikkiuchi/ikkiuchi_reader.dart';
 import '../sound/sounds.dart';
 import 'debug_common.dart';
+import 'ikkiuchi_debug_game.dart';
 import 'ikkiuchi_rating_header.dart';
 import 'ikkiuchi_values.dart';
 
@@ -32,10 +35,12 @@ enum IkkiuchiTapMode {
 
 /// The developer's view of Tobi's strikes (一騎打ち): a full field, his side
 /// laid out by his own layout at the rating chosen, the player's at random.
-/// A tap on the board reads the card under it (or the nearest), and Tobi
+/// A tap on the board reads the card under it (or the nearest) as a match
+/// does, its call shown as in a match ([IkkiuchiCallLayer]), and Tobi
 /// strikes at it with real card physics: taken cards leave, knocked cards
 /// stay where they land until the board resets, which the next read does
-/// first. Nothing is stored.
+/// first. Over the board's top left a line says what was read, a からふだ
+/// as such, and once he is done what he did. Nothing is stored.
 class IkkiuchiStrikesPage extends StatefulWidget {
   const IkkiuchiStrikesPage({super.key, this.rating = IkkiuchiToolsTuning.ratingStart, this.seed, this.landscape = false});
 
@@ -75,6 +80,14 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   Duration? _idleSince;
   bool _called = false;
 
+  /// The line over the board: a からふだ read, and what Tobi did on the
+  /// read once he is done; whether it says that yet.
+  final _readout = ValueNotifier('');
+  bool _readoutDone = false;
+
+  /// The line over the board now (for tests).
+  String get readout => _readout.value;
+
   /// The board as drawn now (for tests).
   IkkiuchiBoardScene? get scene => _dealer.scene;
 
@@ -88,14 +101,13 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
   void dispose() {
     _ticker.dispose();
     _dealer.dispose();
+    _readout.dispose();
     super.dispose();
   }
 
   /// Deals a new board: a new seed, with new cards and both sides laid out.
   void _newSeed() {
-    scene?.reset();
-    _called = false;
-    _idleSince = null;
+    _reset();
     setState(() {
       _seed = math.Random().nextInt(IkkiuchiToolsTuning.seeds);
       _rng = math.Random(_seed);
@@ -121,7 +133,10 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
       _idleSince = null;
       return;
     }
-    if (scene.note == null) scene.annotate(_readout());
+    if (!_readoutDone) {
+      _readoutDone = true;
+      _readout.value = _whatHappened();
+    }
     if (!_autoReset || !board.cards.settled) return;
     _idleSince ??= elapsed;
     if (elapsed - _idleSince! >= IkkiuchiToolsTuning.autoReset) _reset();
@@ -131,6 +146,7 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     scene?.reset();
     _called = false;
     _idleSince = null;
+    _readout.value = '';
   }
 
   /// Reads the card [pick] chooses on the board as it was set out: a board
@@ -143,7 +159,8 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
     if (poemId != null) _call(scene, poemId);
   }
 
-  /// Reads [poemId]: on the field, or a からふだ.
+  /// Reads [poemId], on the field or a からふだ, as a match reads it; struck
+  /// at once with no call.
   void _call(IkkiuchiBoardScene scene, int poemId) {
     final board = scene.board;
     final field = board.field;
@@ -158,12 +175,19 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
       mistakes: _mistakes,
       moves: _moves,
     );
+    final reading = _mode == IkkiuchiTapMode.read;
+    final call = reading ? IkkiuchiReader.callFor(context, poemId) : null;
     final karafuda = !field.containsKey(poemId);
-    scene.show(kimarijiFor(context, poemId), karafuda: karafuda ? S.of(context).karafuda : null);
-    board.call(read);
-    if (_voice && _mode == IkkiuchiTapMode.read) unawaited(sounds.playKimarijiVoice(poemId));
+    if (karafuda) {
+      scene.callKarafuda(poemId, call: call, tobi: read);
+    } else {
+      scene.callCard(poemId, call: call, tobi: read);
+    }
+    if (_voice && reading) unawaited(sounds.playKimarijiVoice(poemId));
     _called = true;
     _idleSince = null;
+    _readout.value = karafuda ? S.of(context).karafuda : '';
+    _readoutDone = false;
   }
 
   /// The card under [at] (board dp), or the nearest.
@@ -189,13 +213,15 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
         return away[_rng.nextInt(away.length)];
       });
 
-  /// What Tobi did on the last call, for the band.
-  String _readout() {
+  /// What the last read was, a からふだ said as such, and what Tobi did on
+  /// it.
+  String _whatHappened() {
     final board = scene?.board;
     final read = board?.read;
     if (board == null || read == null) return '';
     const ms = IkkiuchiUnit.ms;
     return [
+      if (!read.onField) S.of(context).karafuda,
       if (!read.strikes) 'no strike',
       if (read.strikes) ...[
         'reaction ${ms.format(read.reactionMs)}',
@@ -223,10 +249,26 @@ class IkkiuchiStrikesPageState extends State<IkkiuchiStrikesPage> with SingleTic
           ),
           Expanded(
             child: ClipRect(
-              child: LayoutBuilder(
-                builder: (context, box) =>
-                    IkkiuchiDealer.turned(IkkiuchiBoardView(_sceneFor(box.biggest), onTap: _tapAt), landscape: _landscape),
-              ),
+              child: Stack(children: [
+                Positioned.fill(
+                  child: LayoutBuilder(builder: (context, box) {
+                    final scene = _sceneFor(box.biggest);
+                    return IkkiuchiDealer.turned(
+                        IkkiuchiBoardView(scene, onTap: _tapAt, overCards: IkkiuchiCallLayer(scene: scene)),
+                        landscape: _landscape);
+                  }),
+                ),
+                Positioned(
+                  left: IkkiuchiToolsStyle.gameInset,
+                  top: IkkiuchiToolsStyle.gameInset,
+                  child: IgnorePointer(
+                    child: ValueListenableBuilder(
+                      valueListenable: _readout,
+                      builder: (context, line, _) => line.isEmpty ? const SizedBox.shrink() : IkkiuchiReadoutChip(line),
+                    ),
+                  ),
+                ),
+              ]),
             ),
           ),
           Padding(

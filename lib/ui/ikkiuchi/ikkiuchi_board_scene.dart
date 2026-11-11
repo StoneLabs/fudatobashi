@@ -1,10 +1,8 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 
 import '../../config/config.dart';
-import '../../config/design.dart';
 import '../../domain/ikkiuchi_board.dart';
 import '../../domain/ikkiuchi_call.dart';
 import '../../domain/ikkiuchi_geometry.dart';
@@ -19,8 +17,7 @@ import 'ikkiuchi_reader.dart';
 import 'ikkiuchi_send_flow.dart';
 
 /// The 一騎打ち board as it is drawn: its [layout], the board running on it,
-/// the call shown on the band and read out by the [reader], a card marked,
-/// and the wind switch. Every change repaints the board's painter.
+/// the call read out by the [reader], a card marked, and the wind switch. Every change repaints the board's painter.
 ///
 /// A read is of a card on the field ([callCard]) or of a からふだ
 /// ([callKarafuda]), Tobi playing it as his read decides, or not at all;
@@ -74,12 +71,6 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   VoidCallback? onSettled;
 
-  /// The call on the band, the tag before it on a からふだ, and a small note
-  /// under it.
-  String? kimariji;
-  String? karafuda;
-  String? note;
-
   /// Whether the arm leaves wind lines and smear afterimages.
   bool wind = true;
 
@@ -92,30 +83,30 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// [id] is the card read, for the player to take: marked, its words
-  /// [kimariji] on the band, the reader reading its [call], and the board
-  /// watching for the takes and faults. With [tobi] he plays it so, his
-  /// times counting from its deciding sound.
-  void callCard(int id, String kimariji, {IkkiuchiCall? call, IkkiuchiRead? tobi}) {
+  /// [id] is the card read, for the player to take: marked, the reader
+  /// reading its [call], and the board watching for the takes and faults.
+  /// With [tobi] he plays it so, his times counting from its deciding
+  /// sound.
+  void callCard(int id, {IkkiuchiCall? call, IkkiuchiRead? tobi}) {
     _callBoard(id, onField: true, call: call, tobi: tobi);
     _marked = id;
     _karafudaIn = null;
     _read(call);
-    show(kimariji);
+    notifyListeners();
   }
 
   /// [id], a card not on the board, is read: a からふだ, every card on the
-  /// field one to fault on. No card is marked; its words [kimariji] go on
-  /// the band after the [tag], and the reader reads its [call]; with [tobi]
-  /// he plays it so. [IkkiuchiPlayTuning.karafudaPause] after its last
-  /// sound the read is over, and [onSettled] is told once the cards the
-  /// finger stirred are home.
-  void callKarafuda(int id, String kimariji, {required String tag, IkkiuchiCall? call, IkkiuchiRead? tobi}) {
+  /// field one to fault on. No card is marked and the reader reads its
+  /// [call] as any other, never saying it is a からふだ; with [tobi] he
+  /// plays it so. [IkkiuchiPlayTuning.karafudaPause] after its last sound
+  /// the read is over, and [onSettled] is told once the cards the finger
+  /// stirred are home.
+  void callKarafuda(int id, {IkkiuchiCall? call, IkkiuchiRead? tobi}) {
     _callBoard(id, onField: false, call: call, tobi: tobi);
     _marked = null;
     _karafudaIn = (call?.decidedAt ?? 0) + _ms(IkkiuchiPlayTuning.karafudaPause);
     _read(call);
-    show(kimariji, karafuda: tag);
+    notifyListeners();
   }
 
   void _callBoard(int id, {required bool onField, IkkiuchiCall? call, IkkiuchiRead? tobi}) {
@@ -139,25 +130,20 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     }
   }
 
-  /// No card is read: no mark, the band empty, the reader still, no take
-  /// or fault watched.
+  /// No card is read: no mark, the reader still, no take or fault watched.
   void clearCall() {
     board.callCard(null);
     _marked = null;
     _karafudaIn = null;
     _karafudaRead = false;
     reader.stop();
-    show(null);
+    notifyListeners();
   }
 
-  /// The board as it was set out, the band cleared and the reader still.
+  /// The board as it was set out, no card read.
   void reset() {
     board = _layout.board();
-    kimariji = karafuda = note = null;
-    _karafudaIn = null;
-    _karafudaRead = false;
-    reader.stop();
-    _band();
+    clearCall();
   }
 
   /// Each side's cards left, the player's still in the stack among them:
@@ -343,96 +329,11 @@ class IkkiuchiBoardScene extends ChangeNotifier {
       board.cards.hold(board.cards.card(id));
     }
     _settling = true;
-    _band();
-  }
-
-  // The band.
-
-  /// A new call on the band, its note cleared.
-  void show(String? kimariji, {String? karafuda}) {
-    this.kimariji = kimariji;
-    this.karafuda = karafuda;
-    note = null;
-    _band();
-  }
-
-  void annotate(String note) {
-    this.note = note;
-    _band();
-  }
-
-  /// The band's text, recorded once each time it changes, for the band at
-  /// the layout's place.
-  ui.Picture? get bandText => _bandText ??= _recordBand();
-  ui.Picture? _bandText;
-
-  void _band() {
-    _bandText?.dispose();
-    _bandText = null;
     notifyListeners();
-  }
-
-  /// The call on one line, narrowed where it is wider than the room for
-  /// it ([IkkiuchiBoardLayout.words]), and the note under it.
-  ui.Picture? _recordBand() {
-    final text = kimariji;
-    if (text == null) return null;
-    final band = _layout.band, words = _layout.words;
-    final dim = karafuda != null;
-    final call = TextPainter(
-      text: TextSpan(children: [
-        if (karafuda case final tag?)
-          TextSpan(
-            text: tag + IkkiuchiBoardStyle.karafudaGap,
-            style: const TextStyle(fontSize: IkkiuchiBoardStyle.karafudaTag),
-          ),
-        TextSpan(
-          text: text,
-          style: const TextStyle(fontSize: IkkiuchiBoardStyle.kimariji),
-        ),
-      ], style: TextStyle(
-        fontFamily: Fonts.display,
-        height: 1,
-        color: dim ? IkkiuchiBoardStyle.karafudaColor : IkkiuchiBoardStyle.kimarijiColor,
-      )),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final small = note == null
-        ? null
-        : (TextPainter(
-            text: TextSpan(
-              text: note,
-              style: const TextStyle(
-                fontFamily: Fonts.ui,
-                fontSize: IkkiuchiBoardStyle.noteFont,
-                height: 1,
-                color: IkkiuchiBoardStyle.noteColor,
-              ),
-            ),
-            textDirection: TextDirection.ltr,
-            maxLines: 1,
-            ellipsis: IkkiuchiBoardStyle.noteEllipsis,
-          )..layout(maxWidth: band.width - 2 * IkkiuchiBoardStyle.pad));
-    final fit = math.min(1.0, words.width / call.width);
-    final callH = call.height * fit;
-    final height = callH + (small == null ? 0 : IkkiuchiBoardStyle.noteGap + small.height);
-    final top = words.center.dy - height / 2;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder)
-      ..save()
-      ..translate(words.center.dx, top)
-      ..scale(fit);
-    call.paint(canvas, Offset(-call.width / 2, 0));
-    canvas.restore();
-    small?.paint(canvas, Offset(words.center.dx - small.width / 2, top + callH + IkkiuchiBoardStyle.noteGap));
-    call.dispose();
-    small?.dispose();
-    return recorder.endRecording();
   }
 
   @override
   void dispose() {
-    _bandText?.dispose();
     reader.dispose();
     super.dispose();
   }
