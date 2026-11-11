@@ -474,12 +474,14 @@ void main() {
   // touching both sides on each. They send Tobi a card when the rules ask,
   // and place each card he sends at the first free spot the field shows,
   // checking that it shows a spot in every row the rules give one and that
-  // no cards overlap. Gives the most
+  // no cards overlap, and that a send
+  // is left out only when the side it was for is full. Gives the most
   // cards they held, the most a row of theirs held before the match was
-  // decided, and how many of his cards went on without waiting for them.
-  ({int held, int row, int unplaced}) faultEveryRead(IkkiuchiMatchFlow flow, {int karafuda = 0}) {
+  // decided, how many of his cards went on without waiting for them, and
+  // how many sends were left out.
+  ({int held, int row, int unplaced, int noSend}) faultEveryRead(IkkiuchiMatchFlow flow, {int karafuda = 0}) {
     final scene = flow.scene, send = scene.send, rating = flow.rating;
-    var held = 0, row = 0, unplaced = 0;
+    var held = 0, row = 0, unplaced = 0, noSend = 0;
     int? read;
     final touches = <int>[];
     void touch(int id) {
@@ -492,10 +494,14 @@ void main() {
       final first = flow.reads.length < karafuda;
       flow.rating = first ? null : rating;
       if (first) flow.askKarafuda();
-      final carrying = send.stage == IkkiuchiSendStage.carrying;
+      final carrying = send.stage == IkkiuchiSendStage.carrying, before = flow.stage;
       flow.advance(frame);
       if (carrying && send.stage == IkkiuchiSendStage.none) unplaced++;
       final sides = scene.sides!, call = scene.reader.call;
+      if (flow.stage == IkkiuchiStage.noSend && before != IkkiuchiStage.noSend) {
+        noSend++;
+        expect(sides.receives(flow.fullSide!), isFalse, reason: 'no card sent only to a full side');
+      }
       if (touches.isNotEmpty) touch(touches.removeAt(0));
       if (flow.stage == IkkiuchiStage.kaminoku && call != null && call.card != read) {
         read = call.card;
@@ -531,10 +537,10 @@ void main() {
     expect(flow.stage.over, isTrue,
         reason: 'the match never hangs: held in ${flow.stage}, ${send.stage}, '
             '${scene.sides!.tobiCards.length} and ${scene.sides!.playerCards.length} cards');
-    return (held: held, row: row, unplaced: unplaced);
+    return (held: held, row: row, unplaced: unplaced, noSend: noSend);
   }
 
-  group('The field zooms out', () {
+  group('No 送り札 to a full side', () {
     for (final landscape in [true, false]) {
       final where = landscape ? 'landscape' : 'portrait';
       for (final (name, perSide, rows) in [
@@ -548,7 +554,7 @@ void main() {
         ('custom', 25, 3),
       ]) {
         test('$name, $perSide a side in $rows rows, $where, the player faulting on every read: every card Tobi '
-            'sends gets a spot on the field, no row past its most, and Tobi wins', () {
+            'sends gets a spot on the field, none goes to a full side, no row past its limit, and Tobi wins', () {
           final flow = match(5, perSide: perSide, rows: rows, landscape: landscape), scene = flow.scene;
           placeByTaps(scene);
           flow
@@ -557,15 +563,15 @@ void main() {
           final start = scene.layout.cardW;
           final most = faultEveryRead(flow);
           expect(most.unplaced, 0, reason: 'each waits for the player to place it');
-          expect(most.row, lessThanOrEqualTo(IkkiuchiLayout.rowLimit(IkkiuchiLayoutTuning.rows)));
+          expect(most.row, lessThanOrEqualTo(IkkiuchiLayout.rowLimit(rows)));
           expect(flow.result, IkkiuchiResult.lost, reason: 'Tobi wins');
           expect(scene.layout.cardW, lessThanOrEqualTo(start + 1e-9), reason: 'never bigger than at the start');
           flow.dispose();
         });
       }
 
-      test('25 a side in 3 rows, $where, the first 12 reads からふだ the player faults on both sides of: the one '
-          'card past every row at its most goes past a row\'s room, and Tobi wins', () {
+      test('25 a side in 3 rows, $where, the first 12 reads からふだ the player faults on both sides of: their '
+          'side fills, a card for it is not sent, no row goes past its limit, and Tobi wins', () {
         const perSide = 25;
         final flow = match(5, perSide: perSide, rows: 3, landscape: landscape), scene = flow.scene;
         placeByTaps(scene);
@@ -573,9 +579,9 @@ void main() {
           ..donePlacing()
           ..startEarly();
         final most = faultEveryRead(flow, karafuda: 12);
-        expect(most.held, greaterThanOrEqualTo(2 * perSide - 1));
-        expect(most.unplaced, 1);
-        expect(most.row, IkkiuchiLayout.rowLimit(3) + 1);
+        expect(most.noSend, greaterThanOrEqualTo(1), reason: 'their side filled');
+        expect(most.unplaced, 0);
+        expect(most.row, lessThanOrEqualTo(IkkiuchiLayout.rowLimit(3)));
         expect(flow.result, IkkiuchiResult.lost, reason: 'Tobi wins');
         flow.dispose();
       });
