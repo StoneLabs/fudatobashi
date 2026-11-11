@@ -108,6 +108,7 @@ class IkkiuchiSendLayer extends StatelessWidget {
             child: CustomSingleChildLayout(
               delegate: _UnderCard(
                 centre: wait.center.dx,
+                left: IkkiuchiSendStyle.wait.gap,
                 top: wait.bottom + _look.stackTagRoom - _look.stackTagOverlap,
                 right: (scene.column?.left ?? scene.layout.size.x) - IkkiuchiSendStyle.wait.gap,
               ),
@@ -145,22 +146,22 @@ class IkkiuchiSendLayer extends StatelessWidget {
 }
 
 /// The hint under the waiting card: centred under it from [top], reaching
-/// past its sides when wider, but never right of [right], so that it stays
-/// clear of the game column.
+/// past its sides when wider, but never left of [left] nor right of
+/// [right], so that it stays on the board and clear of the game column.
 class _UnderCard extends SingleChildLayoutDelegate {
-  _UnderCard({required this.centre, required this.top, required this.right});
+  _UnderCard({required this.centre, required this.left, required this.top, required this.right});
 
-  final double centre, top, right;
+  final double centre, left, top, right;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
 
   @override
   Offset getPositionForChild(Size size, Size child) =>
-      Offset(math.min(centre - child.width / 2, right - child.width), top);
+      Offset(math.max(left, math.min(centre - child.width / 2, right - child.width)), top);
 
   @override
-  bool shouldRelayout(_UnderCard old) => old.centre != centre || old.top != top || old.right != right;
+  bool shouldRelayout(_UnderCard old) => old.centre != centre || old.left != left || old.top != top || old.right != right;
 }
 
 /// Tobi's word as his card waits.

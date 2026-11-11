@@ -39,7 +39,7 @@ import '../../domain/ikkiuchi_side.dart';
 ///
 /// The cards to place wait at [wait], big: a card Tobi sends, and while
 /// the match opens the player's [stack]. In portrait under the player's
-/// side; in landscape right of Tobi, in the open middle of his half, over
+/// side, at its left edge; in landscape right of Tobi, in the open middle of his half, over
 /// his cards where it must. No room is kept for it in landscape.
 class IkkiuchiBoardLayout {
   IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.cards, this.field, this.wait,
@@ -116,7 +116,7 @@ class IkkiuchiBoardLayout {
     final column = landscape
         ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, edge, w - edge, h - edge)
         : null;
-    final wait = landscape ? _waitRightOfTobi(area, band, cardW, tobi, column!) : _waitUnder(area, cardW, w, h);
+    final wait = landscape ? _waitRightOfTobi(area, band, cardW, tobi, column!) : _waitUnder(area, cardW, h);
     return IkkiuchiBoardLayout._(
         Vec(w, h), landscape, band, tobi, cardW, cards, area, wait, column, opening ? wait : null, field, fieldW, origin);
   }
@@ -140,16 +140,16 @@ class IkkiuchiBoardLayout {
   static final _waitTags = IkkiuchiSendStyle.look.stackTagRoom + IkkiuchiSendStyle.hintRoom;
 
   /// Under the player's side, [IkkiuchiSendStyle.wait]'s `margin` under
-  /// it, centred across the board: as tall as the room down to the board's
-  /// foot takes it with its tags under it, at most `maxHeight` and at least
-  /// a field card.
-  static Rect _waitUnder(Rect field, double cardW, double w, double h) {
+  /// it, at its left edge, so that the opening's hint has room right of
+  /// it: as tall as the room down to the board's foot takes it with its
+  /// tags under it, at most `maxHeight` and at least a field card.
+  static Rect _waitUnder(Rect field, double cardW, double h) {
     const style = IkkiuchiSendStyle.wait;
     final top = field.bottom + style.margin;
     final room = h - IkkiuchiBoardStyle.bottomGap - _waitTags - top;
     final height = math.max(math.min(style.maxHeight, room), cardW * IkkiuchiField.cardH);
     final width = height / IkkiuchiField.cardH;
-    return Rect.fromLTWH((w - width) / 2, top, width, height);
+    return Rect.fromLTWH(field.left, top, width, height);
   }
 
   /// Just right of Tobi, [IkkiuchiSendStyle.wait]'s `gap` clear of him, in

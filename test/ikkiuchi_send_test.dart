@@ -434,13 +434,14 @@ void main() {
       expect(carry.faceAt(carry.end), TobiFace.pointing);
     });
 
-    test("in portrait the waiting card lies big under the player's side, centred, its tags above the board's foot", () {
+    test("in portrait the waiting card lies big under the player's side, at its left edge, its tags above the board's "
+        'foot', () {
       final l = layoutOf(dealt(13));
       final wait = l.wait;
       final tags = IkkiuchiSendStyle.look.stackTagRoom + IkkiuchiSendStyle.hintRoom;
       expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9));
       expect(wait.top, closeTo(l.field.bottom + IkkiuchiSendStyle.wait.margin, 1e-9), reason: "under the player's side");
-      expect(wait.center.dx, closeTo(l.size.x / 2, 1e-9), reason: 'centred');
+      expect(wait.left, closeTo(l.field.left, 1e-9), reason: 'at its left edge');
       expect(wait.bottom + tags, lessThanOrEqualTo(l.size.y - IkkiuchiBoardStyle.bottomGap + 1e-9), reason: 'its tags on it');
       expect(wait.width, greaterThan(2 * l.cardW), reason: 'big');
     });

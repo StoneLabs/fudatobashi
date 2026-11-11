@@ -98,8 +98,8 @@ abstract final class IkkiuchiBoardStyle {
 abstract final class IkkiuchiSendStyle {
   /// The cards to place (the opening's stack, the card Tobi sends), never
   /// smaller than the field's cards. In portrait `margin` under the
-  /// player's side, as tall as the room under it takes it, at most
-  /// `maxHeight`. In landscape just right of Tobi, `gap` clear of him, in
+  /// player's side at its left edge, as tall as the room under it takes
+  /// it, at most `maxHeight`. In landscape just right of Tobi, `gap` clear of him, in
   /// the open middle of his half and over his cards where it must: at most
   /// `landscapeScale` field cards wide, and as tall as his half takes it
   /// with its tag, `gap` clear of the half's edges.
