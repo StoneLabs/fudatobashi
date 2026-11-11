@@ -802,7 +802,8 @@ void main() {
       }
     });
 
-    test("Tobi's card sent to a side the field has no spot on waits, the field zoomed out just until one opens", () {
+    test("Tobi's card sent to a side the field has no spot on waits, the field zoomed out just until every spot opens",
+        () {
       for (final landscape in [false, true]) {
         final why = landscape ? 'landscape' : 'portrait';
         // A 2-row match, the player's rows of 12 each as wide as the field
@@ -828,14 +829,16 @@ void main() {
         expect(across(), greaterThan(startAcross), reason: '$why: more cards across');
         expect(scene.layout.cardW, lessThanOrEqualTo(start), reason: '$why: the cards no bigger');
         final free = flow.targets().freeSpots;
-        expect(free, isNotEmpty, reason: '$why: a spot opened');
-        // Just enough: a card more at a spot the field shows makes it as
-        // wide as it is.
+        expect({for (final (spot, _) in free) flow.placeOf(spot)!.row},
+            {for (final spot in scene.sides!.playerBoard.freeSpots) flow.placeOf(spot)!.row},
+            reason: '$why: a spot opened in every row the rules give one');
+        // Just enough: a card more at the spot that needs the most room
+        // makes it as wide as it is.
         final widths = [
           for (final (spot, _) in free)
             IkkiuchiField(tobi: scene.sides!.tobi, player: scene.sides!.placed(card, spot)!.player).leastWidth(),
         ];
-        expect(widths.reduce(math.min), closeTo(across(), 1e-9), reason: why);
+        expect(widths.reduce(math.max), closeTo(across(), 1e-9), reason: why);
         final (_, r) = free.first;
         flow.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
         expect(flow.active, isFalse, reason: '$why: placed');
@@ -1004,7 +1007,7 @@ void main() {
       expect(flow.active, isFalse);
     });
 
-    test('a card put in a tight open middle widens its row, the cards shrinking, until the row is full', () {
+    test('a card for a tight open middle has room there as it waits, the cards shrinking, until the row is full', () {
       // The player's 上段 is their widest row, the field as narrow as it,
       // its groups as near as they may be.
       final sides = dealt(10);
@@ -1018,15 +1021,16 @@ void main() {
       expect(scene.layout.field.width, closeTo(IkkiuchiField.rowWidth(7, 7) * before, 1e-6), reason: 'as narrow as the 上段');
       receive(scene);
       final card = scene.send.card!;
+      final waiting = scene.layout.cardW;
+      expect(waiting, lessThan(before), reason: 'the cards shrink as it waits');
+      expect(scene.layout.field.width, closeTo(IkkiuchiField.rowWidth(7, 7, middle: 1) * waiting, 1e-6),
+          reason: 'just room for it in the middle');
       final (spot, open) = scene.send.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
-      expect(open.w, closeTo(IkkiuchiField.leastGap * before, 1e-6), reason: 'the room between the groups');
       scene.send.tap(centreOf(open));
       expect(scene.sides!.player[middleRow.index].middle, [card]);
-      expect(scene.layout.cardW, lessThan(before), reason: 'the cards shrink');
-      runFor(scene, IkkiuchiPlayTuning.relayoutGlide ~/ 2);
-      expect(scene.board.cards.gliding, isTrue, reason: 'on their way');
+      expect(scene.layout.cardW, closeTo(waiting, 1e-9), reason: 'the row had room');
       runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
-      expectHome(scene, 'the row widened');
+      expectHome(scene, 'placed in the middle');
 
       // 14 cards in its groups and one in the middle fill the row's room.
       receive(scene);

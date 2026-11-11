@@ -473,7 +473,8 @@ void main() {
   // first [karafuda] reads are からふだ that Tobi lets go by, the player
   // touching both sides on each. They send Tobi a card when the rules ask,
   // and place each card he sends at the first free spot the field shows,
-  // checking that it shows one and that no cards overlap. Gives the most
+  // checking that it shows a spot in every row the rules give one and that
+  // no cards overlap. Gives the most
   // cards they held, the most a row of theirs held before the match was
   // decided, and how many of his cards went on without waiting for them.
   ({int held, int row, int unplaced}) faultEveryRead(IkkiuchiMatchFlow flow, {int karafuda = 0}) {
@@ -512,6 +513,9 @@ void main() {
         expectApart(scene, why);
         final free = send.targets().freeSpots;
         expect(free, isNotEmpty, reason: '$why: a spot on the field for each card he sends');
+        expect({for (final (spot, _) in free) send.placeOf(spot)!.row},
+            {for (final spot in scene.sides!.playerBoard.freeSpots) send.placeOf(spot)!.row},
+            reason: '$why: a spot in every row the rules give one');
         final (_, r) = free.first;
         final spot = Rect.fromLTWH(r.x, r.y, r.w, r.h);
         for (final c in scene.layout.cards) {

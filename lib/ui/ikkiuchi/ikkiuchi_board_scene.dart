@@ -295,8 +295,9 @@ class IkkiuchiBoardScene extends ChangeNotifier {
 
   /// The sides are now [next]: the board is laid out for them afresh, with
   /// no room kept for the stack once [forPlay], and with [roomForOne] the
-  /// field zoomed out, if it must be, until a card more has a spot on the
-  /// player's side (`IkkiuchiSides.playerRoomForOne`); and set out anew,
+  /// field zoomed out, if it must be, until a card more has room at every
+  /// free spot on the player's side (`IkkiuchiSides.playerRoomForOne`); and
+  /// set out anew,
   /// every card gliding over [glide] from where it lies now, or from
   /// [from] for one off the board, to its new home and size; the cards of
   /// [held], and those Tobi has still to lay down as the match opens, are

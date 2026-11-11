@@ -157,10 +157,10 @@ class IkkiuchiSides {
     );
   }
 
-  /// The narrowest a field may be, in card widths, for a card more on the
-  /// player's side: as wide as the narrowest of their rows with it added at
-  /// one of the side's free spots ([IkkiuchiField.rowWidth]); null with
-  /// none free, every row at its most.
+  /// The narrowest a field may be, in card widths, for a card more to have
+  /// room at every free spot of the player's side: as wide as the widest of
+  /// their rows with it added at one of them ([IkkiuchiField.rowWidth]);
+  /// null with none free, every row at its most.
   double? get playerRoomForOne {
     final widths = [
       for (final spot in playerBoard.freeSpots)
@@ -170,7 +170,7 @@ class IkkiuchiSides {
           CardSpot() => throw StateError('a free spot is never a card'),
         },
     ];
-    return widths.isEmpty ? null : widths.reduce(math.min);
+    return widths.isEmpty ? null : widths.reduce(math.max);
   }
 
   /// [row]'s width ([IkkiuchiField.rowWidth]) with a card more in its [part].
