@@ -101,13 +101,10 @@ class IkkiuchiField {
         right: _tobiRows.map((r) => reach(r.right)).reduce(math.max),
       );
 
-  /// The narrowest the field may be: each row at least its [rowWidth], and
-  /// with [tobiRoom] the open middle of Tobi's side at least that wide
-  /// between the widest of his groups on each side.
-  double leastWidth({double tobiRoom = 0}) => [
+  /// The narrowest the field may be: each row at least its [rowWidth].
+  double leastWidth() => [
         for (final r in _tobiRows) rowWidth(r.left, r.right),
         for (final r in _shown.map(_playerRow)) rowWidth(r.left.length, r.right.length, middle: r.middle.length),
-        if (tobiRoom > 0) _tobiReach.left + _tobiReach.right + tobiRoom,
       ].reduce(math.max);
 
   /// Where the open middle of Tobi's side is, across a field [width] wide:

@@ -22,11 +22,9 @@ abstract final class IkkiuchiBoardStyle {
   static const Color bandRuleColor = Palette.ink;
 
   /// A card of a 3-row match is never wider than [maxCardW]. A 1- or 2-row
-  /// match keeps the 3-row field, as wide and, in landscape, as tall, and
-  /// grows its cards from the 3-row card as far as that field lets them:
-  /// its rows fit the field's height, and a full row
-  /// (`IkkiuchiLayout.rowLimit`), its groups apart, fits across it; in
-  /// landscape, a full row of Tobi's with his room in its open middle too.
+  /// match keeps the 3-row field, as wide and, in landscape, as tall, its
+  /// cards as many times bigger as its full row holds fewer cards
+  /// (`IkkiuchiBoardLayout.growth`).
   static const double maxCardW = 80;
 
   /// A card marked on the board: an outline [markWidth] wide in
@@ -163,12 +161,6 @@ abstract final class IkkiuchiSendStyle {
 /// the player lays out their side from a stack with the placing's look
 /// (`IkkiuchiSendStyle.look`). dp.
 abstract final class IkkiuchiOpeningStyle {
-  /// In landscape the stack lies in the margin right of the player's side,
-  /// [stackGap] clear of the field, its top card [stackScale] field cards
-  /// wide.
-  static const double stackScale = 2.3;
-  static const double stackGap = 6;
-
   /// A placed card let go within [stackReach] of the stack goes back onto it.
   static const double stackReach = 6;
 

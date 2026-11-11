@@ -10,7 +10,6 @@ import '../../l10n/ikkiuchi_strings.dart';
 import '../../l10n/strings.dart';
 import '../side_trips/field_preview.dart';
 import 'ikkiuchi_board_layout.dart';
-import 'ikkiuchi_tobi_art.dart';
 
 /// A small picture of a field of [perSide] cards a side in [rows] rows as a
 /// match lays it out in landscape, face down on the match's tatami
@@ -42,9 +41,6 @@ class IkkiuchiFieldPicture extends StatelessWidget {
     backBorderWidth: IkkiuchiFieldPictureStyle.cardEdge,
   );
 
-  /// Where Tobi's arms are, which his room in a landscape match is sized by.
-  static final _rig = IkkiuchiTobiArt.rig();
-
   @override
   Widget build(BuildContext context) => FieldPreview(
         spec: _spec,
@@ -66,9 +62,9 @@ class IkkiuchiFieldPicture extends StatelessWidget {
     ];
     final field = IkkiuchiField(tobi: side, player: side, rowGap: IkkiuchiFieldTuning.landscapeRowGap);
     // The 3-row field's half and width, in this match's card widths.
-    final grow = IkkiuchiBoardLayout.growth(rows, landscape: true, rig: _rig);
+    final grow = IkkiuchiBoardLayout.growth(rows);
     final half = IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow;
-    final width = math.max(IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! / grow, field.leastWidth());
+    final width = IkkiuchiBoardLayout.fieldWidth / grow;
     final cardW = math.min((area.height - band - 2 * bandGap) / (2 * half), area.width / width);
     final gap = (band + 2 * bandGap) / cardW;
     final left = area.left + (area.width - width * cardW) / 2;

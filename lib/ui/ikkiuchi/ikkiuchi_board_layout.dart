@@ -14,40 +14,37 @@ import '../../domain/ikkiuchi_side.dart';
 /// Where everything lies on the 一騎打ち board of [size]: the full field
 /// ([IkkiuchiField]), Tobi's side across the band at the top, every row
 /// either side has shown, empty or not. The field is laid out as a 3-row
-/// match's whatever its rows; in 1 or 2 rows its cards are bigger, as many
-/// times a 3-row card as that field lets them grow
-/// ([IkkiuchiBoardStyle.maxCardW]). In landscape the field keeps a 3-row
-/// field's height too, the rows lying by the band and the height left
-/// over at its outer edges; in portrait it is as tall as its rows. Both
-/// sides' cards are one size, as big as the board lets them grow: its
-/// widest row's groups close in toward the middle as they grow, until a
-/// row is as narrow as it may be ([IkkiuchiField.rowWidth]), the field and
-/// the band (in landscape only a narrower gap, with the rows closer) fill
-/// the height, or a 3-row card is [IkkiuchiBoardStyle.maxCardW] wide. The
-/// field spans the board's width, but never more than
-/// a 3-row match's [IkkiuchiLayoutTuning.rowSlots] 3-row card widths, and then lies
-/// centred. Portrait stands Tobi above his side, his room kept above the
-/// field; landscape sits him in the open
-/// middle of his half, the room he needs there kept open, and its rows may
-/// reach the board's top and bottom edges. Landscape keeps the game
-/// [column] down the board's right edge, from its top to its bottom however
-/// tall the field is: the field lies centred where it can, else as far
-/// right as leaves the column clear; portrait lays the column's parts
-/// along the band, the call in its middle ([words]). A card Tobi sends
-/// waits at [wait], big, right of him: in portrait just above his side;
-/// in landscape in the open middle of his half, over his cards where it
-/// must. No room is kept for it.
+/// match's whatever its rows, [fieldWidth] 3-row card widths across; in 1
+/// or 2 rows its cards are bigger, [growth] times a 3-row card. Both
+/// sides' cards are one size, a 3-row card never wider than
+/// [IkkiuchiBoardStyle.maxCardW].
 ///
-/// While the match opens, the player's cards wait in a [stack]: in
-/// landscape room is kept for it right of the field, beside the player's
-/// side ([IkkiuchiOpeningStyle]), the field at its full width and the cards
-/// a little smaller; in portrait it lies where Tobi's card waits.
+/// In landscape the field is the biggest that fits between the pad and
+/// the game [column], which runs down the board's right edge, and the
+/// board's full height, centred there; it keeps a 3-row field's height
+/// too, the rows lying by the gap between the sides and the height left
+/// over at its outer edges. Its size depends on the board alone, so it
+/// never changes in the match. Tobi sits in the open middle of his half,
+/// over his cards where his rows near full.
 ///
-/// Any change to the sides lays the board out afresh by the same rules
-/// ([withSides]), its rows kept: the cards are never bigger than they
-/// started ([startW]), and the field zooms out, its cards smaller, only
-/// as far as its rows need, or a card to place needs a spot (`need`); it
-/// zooms back in as they leave.
+/// In portrait the field is as tall as its rows, its cards as big as the
+/// board lets them grow: its widest row's groups close in toward the
+/// middle as they grow, until a row is as narrow as it may be
+/// ([IkkiuchiField.rowWidth]), the field and the band fill the height, or
+/// the cards are their widest. The field spans the board's width, but
+/// never more than the 3-row field, and then lies centred. Tobi stands
+/// above his side, his room kept above the field; the game column's parts
+/// lie along the band, the call in its middle ([words]). Any change to the
+/// sides lays the board out afresh by the same rules ([withSides]), its
+/// rows kept: the cards are never bigger than they started ([startW]),
+/// and the field zooms out, its cards smaller, only as far as its rows
+/// need, or a card to place needs a spot (`need`); it zooms back in as
+/// they leave.
+///
+/// A card Tobi sends waits at [wait], big, right of him: in portrait just
+/// above his side; in landscape in the open middle of his half, over his
+/// cards where it must. No room is kept for it. While the match opens, the
+/// player's cards wait in a [stack] in the same place.
 class IkkiuchiBoardLayout {
   IkkiuchiBoardLayout._(this.size, this.landscape, this.band, this.tobi, this.cardW, this.startW, this.cards, this.field,
       this.wait, this.column, this.stack, this._field, this._fieldW, this._origin);
@@ -55,9 +52,10 @@ class IkkiuchiBoardLayout {
   /// [tobiRows] and [playerRows] are each side's rows as its owner sees
   /// them, 下段 first, each group from its outer edge in and the open middle
   /// left to right; the [onTop] cards lie on top of their side.
-  /// With [opening] the player's stack is laid out too. With [scale], the
-  /// width the cards started at, they are no wider, and narrower only where
-  /// the field would not fit otherwise, at least [need] card widths wide.
+  /// With [opening] the player's stack is laid out too. In portrait, with
+  /// [scale], the width the cards started at, they are no wider, and
+  /// narrower only where the field would not fit otherwise, at least [need]
+  /// card widths wide.
   factory IkkiuchiBoardLayout.of({
     required Size size,
     required bool landscape,
@@ -80,51 +78,38 @@ class IkkiuchiBoardLayout {
     final bandH = landscape ? IkkiuchiBoardStyle.landscapeGap : IkkiuchiBoardStyle.band;
     final w = size.width, h = size.height;
     final areaW = w - 2 * pad;
-    // A 3-row field's width, and in landscape, where the board's height
-    // limits it, its half too, in this match's card widths; in portrait
-    // the rows' own half.
-    final grow = growth(field.rows, landscape: landscape, rig: rig);
+    // The 3-row field's width, and in landscape its half too, in this
+    // match's card widths; in portrait the rows' own half.
+    final grow = growth(field.rows);
     final half = landscape ? IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow : field.halfHeight;
-    final slots = IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! / grow;
+    final width = fieldWidth / grow;
     final maxCardW = IkkiuchiBoardStyle.maxCardW * grow;
-    // A 1-row side's cards are sized for a full row, whatever the sides
-    // hold, so the cards the field's 8 may all come to one side always fit it.
-    final room = IkkiuchiLayout.rowLimit(1);
-    final fullRow = field.rows != 1
-        ? 0.0
-        : math.max(
-            IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2),
-            landscape ? IkkiuchiField.reach(room) + _tobiRoom(half, rig) : 0.0);
     final double cardW, top, fieldW, left;
     final TobiFrame tobi;
     if (landscape) {
-      // Tobi is as tall as a share of his half, so the room he needs grows
-      // with the cards. Right of the field the column.
-      const share = IkkiuchiBoardStyle.tobiShare;
-      final least = [need, fullRow, field.leastWidth(tobiRoom: _tobiRoom(half, rig))].reduce(math.max);
-      final full = math.max(slots, least);
-      // The stack's room right of the field: its top card, a 3-row card's
-      // [IkkiuchiOpeningStyle.stackScale] wide, in card widths, and the gap
-      // and the edges under it, in dp.
-      final stackW = IkkiuchiOpeningStyle.stackScale / grow;
-      final stackRoom = IkkiuchiOpeningStyle.stackGap + _stackEdges;
+      // The biggest field that fits between the pad and the column and the
+      // full height, whatever the sides hold, centred there; Tobi as tall
+      // as a share of his half.
       final right = w - IkkiuchiColumnStyle.edge - IkkiuchiColumnStyle.width - IkkiuchiColumnStyle.fieldGap;
-      final widest = opening ? (right - pad - stackRoom) / (full + stackW) : (right - pad) / least;
-      cardW = math.min(scale ?? [widest, (h - bandH) / (2 * half), maxCardW].reduce(math.min), widest);
-      final fieldRight = opening ? right - stackRoom - stackW * cardW : right;
+      cardW = [(right - pad) / width, (h - bandH) / (2 * half), maxCardW].reduce(math.min);
+      fieldW = width;
+      left = pad + (right - pad - fieldW * cardW) / 2;
       top = (h - (2 * half * cardW + bandH)) / 2;
-      fieldW = math.min((fieldRight - pad) / cardW, full);
-      left = math.min((w - fieldW * cardW) / 2, fieldRight - fieldW * cardW);
       final open = field.tobiOpen(fieldW);
-      final k = half * cardW * share / rig.size.y;
+      final k = half * cardW * IkkiuchiBoardStyle.tobiShare / rig.size.y;
       final middle = left + (open.from + open.to) / 2 * cardW;
       tobi = TobiFrame(Vec(middle - rig.size.x * k / 2, top + IkkiuchiBoardStyle.tobiTop), k, rig);
     } else {
+      // A 1-row side's cards are sized for a full row, whatever the sides
+      // hold, so the cards the field's 8 may all come to one side always
+      // fit it.
+      final room = IkkiuchiLayout.rowLimit(1);
+      final fullRow = field.rows == 1 ? IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2) : 0.0;
       final least = [need, fullRow, field.leastWidth()].reduce(math.max);
       final widest = areaW / least;
       final tallest = (h - pad - IkkiuchiBoardStyle.bottomGap - bandH - IkkiuchiBoardStyle.tobiMinRoom) / (2 * half);
       cardW = math.min(scale ?? [widest, tallest, maxCardW].reduce(math.min), widest);
-      fieldW = math.min(areaW / cardW, math.max(slots, least));
+      fieldW = math.min(areaW / cardW, math.max(width, least));
       left = pad + (areaW - fieldW * cardW) / 2;
       top = h - IkkiuchiBoardStyle.bottomGap - (2 * half * cardW + bandH);
       final k = math.min(IkkiuchiBoardStyle.tobiHeight, top - pad - IkkiuchiBoardStyle.tobiTopRoom) / rig.size.y;
@@ -144,52 +129,22 @@ class IkkiuchiBoardLayout {
         ? Rect.fromLTRB(w - edge - IkkiuchiColumnStyle.width, edge, w - edge, h - edge)
         : null;
     final wait = landscape ? _waitRightOfTobi(area, band, cardW, tobi, column!) : _waitByTobi(area, tobi, cardW, w);
-    final stack = !opening ? null : (landscape ? _stackBesidePlayer(area, band, cardW / grow) : wait);
-    return IkkiuchiBoardLayout._(
-        Vec(w, h), landscape, band, tobi, cardW, scale ?? cardW, cards, area, wait, column, stack, field, fieldW, origin);
+    return IkkiuchiBoardLayout._(Vec(w, h), landscape, band, tobi, cardW, scale ?? cardW, cards, area, wait, column,
+        opening ? wait : null, field, fieldW, origin);
   }
+
+  /// The 3-row field across, in 3-row card widths: a full row of a 3-row
+  /// match, [IkkiuchiLayoutTuning.rowSlots] card pitches less the gap after
+  /// the last card.
+  static final double fieldWidth =
+      IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! * IkkiuchiField.pitch - IkkiuchiFieldTuning.cardGap;
 
   /// How many times a 3-row card's width the cards of a match of [rows]
-  /// rows are, by [IkkiuchiBoardStyle.maxCardW]'s rule: 1 in 3 rows; in
-  /// fewer, as big as fits a 3-row field: their rows within its height and
-  /// a full row across its width, in landscape a full row of Tobi's with
-  /// his room too.
-  static double growth(int rows, {required bool landscape, required TobiRig rig}) {
-    if (rows == IkkiuchiLayoutTuning.rows) return 1;
-    final rowGap = landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap;
-    final half = IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, rowGap);
-    final room = IkkiuchiLayout.rowLimit(rows);
-    final slots = IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]!;
-    return [
-      half / IkkiuchiField.halfOf(rows, rowGap),
-      slots / IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2),
-      // Tobi is as big as in 3 rows: his width is the same in 3-row card
-      // widths, his side room in this match's.
-      if (landscape)
-        (slots - (_tobiRoom(half, rig) - 2 * IkkiuchiBoardStyle.tobiSideRoom)) /
-            (IkkiuchiField.reach(room) + 2 * IkkiuchiBoardStyle.tobiSideRoom),
-    ].reduce(math.min);
-  }
-
-  /// The room Tobi needs in landscape across the open middle of his half,
-  /// in card widths, his half [half] card widths tall: his width at
-  /// [IkkiuchiBoardStyle.tobiShare] of its height, and his side room.
-  static double _tobiRoom(double half, TobiRig rig) =>
-      half * IkkiuchiBoardStyle.tobiShare * rig.size.x / rig.size.y + 2 * IkkiuchiBoardStyle.tobiSideRoom;
-
-  /// How far the edges of the cards under the stack's top one reach past it.
-  static final _stackEdges = IkkiuchiSendStyle.look.stackDepth * IkkiuchiSendStyle.look.stackStep;
-
-  /// [IkkiuchiOpeningStyle.stackGap] right of the field, as wide as its
-  /// room, centred on the player's half with its tag under it; its top card
-  /// [IkkiuchiOpeningStyle.stackScale] times [baseW], a 3-row card's width.
-  static Rect _stackBesidePlayer(Rect field, Rect band, double baseW) {
-    final tag = IkkiuchiSendStyle.look.stackTagRoom;
-    final width = IkkiuchiOpeningStyle.stackScale * baseW, height = width * IkkiuchiField.cardH;
-    final half = Rect.fromLTRB(field.left, band.bottom, field.right, field.bottom);
-    final top = half.top + (half.height - height - tag) / 2;
-    return Rect.fromLTWH(field.right + IkkiuchiOpeningStyle.stackGap, top, width, height);
-  }
+  /// rows are: as many times as a full row of a 3-row match is a full row
+  /// of theirs ([IkkiuchiLayoutTuning.rowSlots]), so their full row fills
+  /// the 3-row field too.
+  static double growth(int rows) =>
+      IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! / IkkiuchiLayoutTuning.rowSlots[rows]!;
 
   /// A box of the field in card widths from [origin], on the board.
   static CardBox _onBoard(CardBox b, Vec origin, double cardW) =>
