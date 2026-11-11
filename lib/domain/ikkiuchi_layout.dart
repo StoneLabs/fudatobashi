@@ -72,10 +72,8 @@ class IkkiuchiHomes {
   List<IkkiuchiRow> get start => sideWith(own);
 
   /// His side with [present] on it, each card at its home. A row with more
-  /// cards than it has room for ([IkkiuchiLayout.rowRoom]) passes its
-  /// innermost ones to the inner end of the same group in the nearest row
-  /// with room; with none, to the nearest row under the cap
-  /// ([IkkiuchiLayout.rowCap]), the field zooming out for them.
+  /// cards than its limit ([IkkiuchiLayout.rowLimit]) passes its innermost
+  /// ones to the inner end of the same group in the nearest row with room.
   List<IkkiuchiRow> sideWith(Iterable<int> present) {
     final on = present.toSet();
     final side = [
@@ -88,14 +86,13 @@ class IkkiuchiHomes {
             if (on.contains(id)) id,
         ]),
     ];
-    for (final room in [IkkiuchiLayout.rowRoom(rows), IkkiuchiLayout.rowCap]) {
-      for (var r = 0; r < side.length; r++) {
-        while (side[r].length > room) {
-          final to = _nearestWithRoom(side, r, room);
-          if (to == null) break;
-          final from = side[r].left.length >= side[r].right.length ? IkkiuchiGroup.left : IkkiuchiGroup.right;
-          side[to].group(from).add(side[r].group(from).removeLast());
-        }
+    final room = IkkiuchiLayout.rowLimit(rows);
+    for (var r = 0; r < side.length; r++) {
+      while (side[r].length > room) {
+        final to = _nearestWithRoom(side, r, room);
+        if (to == null) break;
+        final from = side[r].left.length >= side[r].right.length ? IkkiuchiGroup.left : IkkiuchiGroup.right;
+        side[to].group(from).add(side[r].group(from).removeLast());
       }
     }
     return side;
@@ -134,7 +131,7 @@ class IkkiuchiHomes {
 /// His own cards fill his rows first, in the shape drawn for the match
 /// ([drawShape]). Then each card dealt to the player gets a home by the
 /// same rules, a kept group's card joining its group, every row taking at
-/// most [rowRoom] homes while any row has room. A card he receives goes to
+/// most [rowLimit] homes while any row has room. A card he receives goes to
 /// its home, so one sent back and forth lands in the same place.
 class IkkiuchiLayout {
   IkkiuchiLayout({required this.kimariji});
@@ -144,18 +141,9 @@ class IkkiuchiLayout {
 
   final String Function(int poemId) kimariji;
 
-  /// The cards a row of a side of [rows] rows has room for as the match
-  /// starts: in 3 rows its most ([rowCap]); in fewer, where the cards are
-  /// bigger, the most one of its rows needs, its side's most cards shared
-  /// evenly between them.
-  static int rowRoom(int rows) => rows == IkkiuchiLayoutTuning.rows
-      ? rowCap
-      : ((rows == 2 ? IkkiuchiLayoutTuning.twoRowsUpTo : IkkiuchiLayoutTuning.oneRowRoom) / rows).ceil();
-
-  /// The most cards any row holds, the field zoomed out as far as it goes:
-  /// as many as its [IkkiuchiLayoutTuning.rowSlots] take beside the gap
-  /// between its groups.
-  static final int rowCap = (IkkiuchiLayoutTuning.rowSlots - IkkiuchiLayoutTuning.groupGap).floor();
+  /// The most cards a row of a side of [rows] rows holds: as many as its
+  /// [IkkiuchiLayoutTuning.rowSlots] take beside the gap between its groups.
+  static int rowLimit(int rows) => (IkkiuchiLayoutTuning.rowSlots[rows]! - IkkiuchiLayoutTuning.groupGap).floor();
 
   /// Whether a side of [perSide] cards may be laid out in [rows] rows.
   static bool rowsAllowed(int perSide, int rows) =>
@@ -240,7 +228,7 @@ class IkkiuchiLayout {
     plan.room = (box) => (box.group == IkkiuchiGroup.left ? shape[box.row].left : shape[box.row].right) - box.count;
     plan.place(own);
 
-    plan.room = (box) => rowRoom(rows) - plan.rowCount(box.row);
+    plan.room = (box) => rowLimit(rows) - plan.rowCount(box.row);
     plan.place(others);
 
     final mine = own.toSet();
@@ -287,7 +275,7 @@ class IkkiuchiLayout {
     for (var i = 0; i < rest; i++) {
       final open = [
         for (var r = 0; r < rows; r++)
-          if (counts[r] < rowRoom(rows)) r,
+          if (counts[r] < rowLimit(rows)) r,
       ];
       counts[open.reduce((a, b) => under(b) > under(a) ? b : a)]++;
     }

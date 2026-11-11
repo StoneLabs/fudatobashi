@@ -68,7 +68,7 @@ class IkkiuchiFieldPicture extends StatelessWidget {
     // The 3-row field's half and width, in this match's card widths.
     final grow = IkkiuchiBoardLayout.growth(rows, landscape: true, rig: _rig);
     final half = IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow;
-    final width = math.max(IkkiuchiLayoutTuning.rowSlots / grow, field.leastWidth());
+    final width = math.max(IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! / grow, field.leastWidth());
     final cardW = math.min((area.height - band - 2 * bandGap) / (2 * half), area.width / width);
     final gap = (band + 2 * bandGap) / cardW;
     final left = area.left + (area.width - width * cardW) / 2;

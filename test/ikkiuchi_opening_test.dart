@@ -557,7 +557,7 @@ void main() {
           final start = scene.layout.cardW;
           final most = faultEveryRead(flow);
           expect(most.unplaced, 0, reason: 'each waits for the player to place it');
-          expect(most.row, lessThanOrEqualTo(IkkiuchiLayout.rowCap));
+          expect(most.row, lessThanOrEqualTo(IkkiuchiLayout.rowLimit(IkkiuchiLayoutTuning.rows)));
           expect(flow.result, IkkiuchiResult.lost, reason: 'Tobi wins');
           expect(scene.layout.cardW, lessThanOrEqualTo(start + 1e-9), reason: 'never bigger than at the start');
           flow.dispose();
@@ -575,7 +575,7 @@ void main() {
         final most = faultEveryRead(flow, karafuda: 12);
         expect(most.held, greaterThanOrEqualTo(2 * perSide - 1));
         expect(most.unplaced, 1);
-        expect(most.row, IkkiuchiLayout.rowCap + 1);
+        expect(most.row, IkkiuchiLayout.rowLimit(3) + 1);
         expect(flow.result, IkkiuchiResult.lost, reason: 'Tobi wins');
         flow.dispose();
       });

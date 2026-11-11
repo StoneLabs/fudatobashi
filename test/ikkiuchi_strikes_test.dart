@@ -211,7 +211,7 @@ void main() {
             final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
             final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
             final fieldW = rights.reduce(math.max) - lefts.reduce(math.min);
-            expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * u + eps), reason: '$why: at most 16.5 cards wide');
+            expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! * u + eps), reason: '$why: at most 16.5 cards wide');
             final centred = (lefts.reduce(math.min) + rights.reduce(math.max) - l.size.x).abs() < eps;
             final bool capped;
             if (landscape) {
@@ -292,7 +292,7 @@ void main() {
             final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
             final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
             final fieldW = rights.reduce(math.max) - lefts.reduce(math.min);
-            expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * l.cardW + eps), reason: '$name $landscape $seed');
+            expect(fieldW, lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! * l.cardW + eps), reason: '$name $landscape $seed');
             if ((fieldW - (l.size.x - 2 * pad)).abs() < eps) spans = true;
           }
           if (name == 'phone' && !landscape) expect(spans, isTrue, reason: 'width-limited portrait boards are spanned');
@@ -315,7 +315,7 @@ void main() {
             expect(l.cards.map((c) => 2 * c.box.hw), everyElement(closeTo(u, eps)), reason: '$why: one size');
             final lefts = l.cards.map((c) => c.box.centre.x - c.box.hw);
             final rights = l.cards.map((c) => c.box.centre.x + c.box.hw);
-            expect(rights.reduce(math.max) - lefts.reduce(math.min), lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots * u + eps),
+            expect(rights.reduce(math.max) - lefts.reduce(math.min), lessThanOrEqualTo(IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! * u + eps),
                 reason: '$why: at most 16.5 cards wide');
             expect(u, lessThanOrEqualTo(layoutFor(seed, rating, landscape: landscape, size: size).cardW + eps),
                 reason: '$why: no bigger than with none in the middle');
@@ -378,7 +378,7 @@ void main() {
           final rowGap = landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap;
           for (final rows in [1, 2]) {
             final grow = IkkiuchiBoardLayout.growth(rows, landscape: landscape, rig: rig);
-            final room = IkkiuchiLayout.rowRoom(rows);
+            final room = IkkiuchiLayout.rowLimit(rows);
             var full = 0;
             for (var seed = 0; seed < 20; seed++) {
               final why = '$name ${landscape ? 'landscape' : 'portrait'}, $rows rows, seed $seed';
@@ -426,7 +426,7 @@ void main() {
               full++;
               expect(l.field.height, closeTo(three.field.height, 1e-6), reason: why);
               expect(l.tobi.k, closeTo(three.tobi.k, 1e-9), reason: why);
-              if (three.field.width > IkkiuchiLayoutTuning.rowSlots * three.cardW + eps) continue;
+              if (three.field.width > IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! * three.cardW + eps) continue;
               expect(l.field.width, closeTo(three.field.width, 1e-6), reason: why);
               final tobiRoom = rig.size.x * l.tobi.k + 2 * IkkiuchiBoardStyle.tobiSideRoom * u;
               expect(

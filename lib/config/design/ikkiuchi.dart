@@ -25,7 +25,7 @@ abstract final class IkkiuchiBoardStyle {
   /// match keeps the 3-row field, as wide and, in landscape, as tall, and
   /// grows its cards from the 3-row card as far as that field lets them:
   /// its rows fit the field's height, and a full row
-  /// (`IkkiuchiLayout.rowRoom`), its groups apart, fits across it; in
+  /// (`IkkiuchiLayout.rowLimit`), its groups apart, fits across it; in
   /// landscape, a full row of Tobi's with his room in its open middle too.
   static const double maxCardW = 80;
 

@@ -25,7 +25,7 @@ import '../../domain/ikkiuchi_side.dart';
 /// the band (in landscape only a narrower gap, with the rows closer) fill
 /// the height, or a 3-row card is [IkkiuchiBoardStyle.maxCardW] wide. The
 /// field spans the board's width, but never more than
-/// [IkkiuchiLayoutTuning.rowSlots] 3-row card widths, and then lies
+/// a 3-row match's [IkkiuchiLayoutTuning.rowSlots] 3-row card widths, and then lies
 /// centred. Portrait stands Tobi above his side, his room kept above the
 /// field; landscape sits him in the open
 /// middle of his half, the room he needs there kept open, and its rows may
@@ -85,11 +85,11 @@ class IkkiuchiBoardLayout {
     // the rows' own half.
     final grow = growth(field.rows, landscape: landscape, rig: rig);
     final half = landscape ? IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, field.rowGap) / grow : field.halfHeight;
-    final slots = IkkiuchiLayoutTuning.rowSlots / grow;
+    final slots = IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]! / grow;
     final maxCardW = IkkiuchiBoardStyle.maxCardW * grow;
     // A 1-row side's cards are sized for a full row, whatever the sides
     // hold, so the cards the field's 8 may all come to one side always fit it.
-    final room = IkkiuchiLayout.rowRoom(1);
+    final room = IkkiuchiLayout.rowLimit(1);
     final fullRow = field.rows != 1
         ? 0.0
         : math.max(
@@ -158,8 +158,8 @@ class IkkiuchiBoardLayout {
     if (rows == IkkiuchiLayoutTuning.rows) return 1;
     final rowGap = landscape ? IkkiuchiFieldTuning.landscapeRowGap : IkkiuchiFieldTuning.rowGap;
     final half = IkkiuchiField.halfOf(IkkiuchiLayoutTuning.rows, rowGap);
-    final room = IkkiuchiLayout.rowRoom(rows);
-    const slots = IkkiuchiLayoutTuning.rowSlots;
+    final room = IkkiuchiLayout.rowLimit(rows);
+    final slots = IkkiuchiLayoutTuning.rowSlots[IkkiuchiLayoutTuning.rows]!;
     return [
       half / IkkiuchiField.halfOf(rows, rowGap),
       slots / IkkiuchiField.rowWidth(room - room ~/ 2, room ~/ 2),

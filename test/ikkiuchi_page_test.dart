@@ -767,7 +767,7 @@ void main() {
     final right = [
       for (final id in dealt)
         if (homes.homeOf(id).group == IkkiuchiGroup.right) id,
-    ].take(IkkiuchiLayout.rowRoom(1) - 1).toList();
+    ].take(IkkiuchiLayout.rowLimit(1) - 1).toList();
     final rest = [for (final id in dealt) if (!right.contains(id)) id].take(4).toList();
     scene.relayout(IkkiuchiSides(homes: homes, tobi: right, player: [IkkiuchiRow(rest.take(2).toList(), rest.skip(2).toList())]));
     for (var i = 0; i < 200 && !scene.atRest; i++) {

@@ -120,23 +120,18 @@ abstract final class IkkiuchiLayoutTuning {
   static const double sideLean = 0.1;
   static const double splitJitter = 0.15;
 
-  /// A side has [rows] rows, or fewer for fewer cards. Fewer rows have
-  /// bigger cards in the same field (`IkkiuchiBoardLayout`), and a row of
-  /// bigger cards has room across for fewer of them. So a side holds at
-  /// most 25 cards times its rows over 3, rounded down: [twoRowsUpTo] in 2
-  /// rows, [oneRowRoom] in 1. A row of a 1- or 2-row side has room for the
-  /// most cards one of its rows needs (`IkkiuchiLayout.rowRoom`): 8 in both.
-  /// A 1-row side is picked only up to [oneRowUpTo] cards, so the field's
-  /// 8 cards fit in one row whichever side they end up on after 送り札,
-  /// and a row can never overflow.
+  /// A side has [rows] rows, or fewer for fewer cards: 2 rows only up to
+  /// [twoRowsUpTo] cards a side, 1 row only up to [oneRowUpTo], so the
+  /// field's cards always fit one row.
   static const int rows = 3;
   static const int twoRowsUpTo = 16;
-  static const int oneRowRoom = 8;
   static const int oneRowUpTo = 4;
 
-  /// A row is at most [rowSlots] card pitches (card and gap) across, its
-  /// left and right groups at least [groupGap] apart.
-  static const double rowSlots = 16.5;
+  /// A row of a match of so many rows is at most [rowSlots] of its card
+  /// pitches (card and gap) across, its left and right groups at least
+  /// [groupGap] apart: 16, 11 or 8 cards. Fewer rows have bigger cards in
+  /// the same field (`IkkiuchiBoardLayout`).
+  static const Map<int, double> rowSlots = {1: 8.5, 2: 11.5, 3: 16.5};
   static const double groupGap = 0.5;
 
   /// Two cards are look-alikes (友札) when their kimariji share at least
