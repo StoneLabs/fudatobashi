@@ -872,6 +872,46 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets("in landscape on the user's phone the field fills its room left of the game column, the same size from "
+      'the opening through play', (tester) async {
+    final p = await open(tester);
+    await showPage(tester, p, phone: usersPhoneLandscape);
+    for (final (rows, perSide) in [(1, IkkiuchiLayoutTuning.oneRowUpTo), (2, IkkiuchiLayoutTuning.twoRowsUpTo), (3, 25)]) {
+      final setup =
+          IkkiuchiSetup.free(opponentRating: 1600, perSide: perSide, rows: rows, memorise: const Duration(minutes: 1));
+      unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+          .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 2))));
+      await tester.pump();
+      await tester.pump(Motion.route);
+      final flow = screen(tester).flow!;
+      // The field reaches the board's top and bottom, or the pad and the
+      // column's gap.
+      void fills(String why) {
+        final l = flow.scene.layout, f = l.field;
+        final right = l.column!.left - IkkiuchiColumnStyle.fieldGap;
+        final tall = f.top.abs() < 1e-6 && (f.bottom - l.size.y).abs() < 1e-6;
+        final wide = (f.left - IkkiuchiBoardStyle.pad).abs() < 1e-6 && (f.right - right).abs() < 1e-6;
+        expect(tall || wide, isTrue, reason: '$rows rows, $why: $f on ${l.size}');
+      }
+
+      final opening = flow.scene.layout;
+      fills('the opening');
+      flow.scene.opening.placeRest();
+      flow.donePlacing();
+      await toFirstRead(tester, flow);
+      for (var i = 0; i < 100; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(flow.reads, isNotEmpty, reason: '$rows rows: the reads go on');
+      fills('in play');
+      expect(flow.scene.layout.field, opening.field, reason: '$rows rows: the field keeps its place and size');
+      expect(flow.scene.layout.cardW, opening.cardW, reason: '$rows rows: the cards keep their size');
+      expect(tester.takeException(), isNull);
+      await leave(tester);
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('the game column lies the same in a match of 1, 2 or 3 rows, anchored to the screen\'s edges',
       (tester) async {
     final p = await open(tester);
