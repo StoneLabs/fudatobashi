@@ -1821,6 +1821,8 @@
   "ikkiuchiRowsNote": "{0}の​札を​何段に​並べるか",
   "ikkiuchiRowsKey": "{0}段",
   "ikkiuchiRowsKeyOne": "{0}段",
+  "ikkiuchiWind": "風の​エフェクト",
+  "ikkiuchiWindNote": "トビの​腕が​振られた​ときの​風の​線と​残像。​オフに​すると​出ません。",
   "ikkiuchiPlacementTitle": "ランク判定",
   "ikkiuchiTabPerSide": "{0}枚",
   "ikkiuchiBoxPerSide": "{0}枚×2",

@@ -1047,6 +1047,38 @@ void main() {
     }
   });
 
+  group('the wind', () {
+    testWidgets('Settings › Side trips › Ikkiuchi: Wind effects is on until switched off, and is kept', (tester) async {
+      final p = await open(tester);
+      await showPage(tester, p, page: const IkkiuchiSettingsScreen());
+      final row = find.text(s.ikkiuchiWind, findRichText: true);
+      expect(row, findsOneWidget);
+      expect(find.text(s.ikkiuchiWindNote), findsOneWidget);
+      expect(p.settings.ikkiuchi.wind, isTrue);
+      await tester.tap(row);
+      await tester.pump();
+      expect(p.settings.ikkiuchi.wind, isFalse);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final wind in [true, false]) {
+      testWidgets('the match board has wind ${wind ? 'on' : 'off'} as the setting says', (tester) async {
+        final p = await open(tester);
+        await tester.runAsync(
+            () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(wind: wind))));
+        await showPage(tester, p, phone: usersPhoneLandscape);
+        const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15));
+        unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
+        await tester.pump();
+        await tester.pump(Motion.route);
+        expect(screen(tester).flow!.scene.wind, wind);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  });
+
   group('the last 送り札', () {
     const ja = S('ja');
 

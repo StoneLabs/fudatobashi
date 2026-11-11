@@ -53,7 +53,9 @@ Future<void> startIkkiuchiMatch(BuildContext context, IkkiuchiSetup setup, {bool
 ///
 /// Until the screen stands in landscape the board lies turned in it; a
 /// change of its size deals the same match afresh until the player places
-/// a card, and after that the board keeps its size, scaled to fit.
+/// a card, and after that the board keeps its size, scaled to fit. Tobi's
+/// arm leaves wind lines and smear afterimages unless the player turned
+/// them off.
 class IkkiuchiMatchScreen extends StatefulWidget {
   const IkkiuchiMatchScreen({super.key, required this.setup, this.seed, this.guest = false});
 
@@ -73,6 +75,10 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
   late final int _seed = widget.seed ?? math.Random().nextInt(IkkiuchiScreenTuning.seeds);
   late final double _form = IkkiuchiTobi.formFor(_seed);
   late final Progress _progress;
+
+  /// Whether Tobi's arm leaves wind, as the player's settings had it when
+  /// the match began.
+  late final bool _wind = _progress.settings.ikkiuchi.wind;
   final _startedAt = DateTime.now();
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
@@ -141,6 +147,7 @@ class IkkiuchiMatchScreenState extends State<IkkiuchiMatchScreen> with SingleTic
         form: _form,
         opening: true,
         onNew: (scene) {
+          scene.wind = _wind;
           final old = _flow;
           if (old != null) {
             old.removeListener(_changed);

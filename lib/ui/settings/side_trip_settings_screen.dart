@@ -79,7 +79,7 @@ class TeiichiSettingsScreen extends StatelessWidget {
 }
 
 /// Settings › 寄り道 › 一騎打ち: the rows each ranked mode that offers a
-/// choice is laid out in.
+/// choice is laid out in, and whether Tobi's arm leaves wind.
 class IkkiuchiSettingsScreen extends StatelessWidget {
   const IkkiuchiSettingsScreen({super.key});
 
@@ -102,6 +102,14 @@ class IkkiuchiSettingsScreen extends StatelessWidget {
                     onTap: () => progress.updateSettings(settings.copyWith(ikkiuchi: k.withRows(mode, rows)))),
             ],
           ),
+      SettingsGroup(children: [
+        SettingsSwitch(
+          title: s.ikkiuchiWind,
+          note: s.ikkiuchiWindNote,
+          value: k.wind,
+          onChanged: (v) => progress.updateSettings(settings.copyWith(ikkiuchi: k.copyWith(wind: v))),
+        ),
+      ]),
     ]);
   }
 }

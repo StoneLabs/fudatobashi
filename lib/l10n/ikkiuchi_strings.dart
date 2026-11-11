@@ -167,6 +167,10 @@ extension IkkiuchiStrings on S {
   String ikkiuchiRowsNote(IkkiuchiMode mode) => f('ikkiuchiRowsNote', [ikkiuchiModeName(mode)]);
   String ikkiuchiRowsKey(int n) => f(countKey('ikkiuchiRowsKey', n), [n]);
 
+  /// Its switch for the wind lines and afterimages of Tobi's arm.
+  String get ikkiuchiWind => t('ikkiuchiWind');
+  String get ikkiuchiWindNote => t('ikkiuchiWindNote');
+
   /// Custom matches: their name, Tobi's rating, the cards a side as a
   /// label and as a template ({0}×2), the burst that plays [n] a side, and
   /// the field preview's label.

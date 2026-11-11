@@ -1821,6 +1821,8 @@
   "ikkiuchiRowsNote": "How many rows to lay out {0}'s cards in",
   "ikkiuchiRowsKey": "{0} rows",
   "ikkiuchiRowsKeyOne": "{0} row",
+  "ikkiuchiWind": "Wind effects",
+  "ikkiuchiWindNote": "The wind lines and afterimages when Tobi's arm swings. When off, they are not drawn.",
   "ikkiuchiPlacementTitle": "Placement",
   "ikkiuchiTabPerSide": "{0} a side",
   "ikkiuchiBoxPerSide": "{0} a side",
