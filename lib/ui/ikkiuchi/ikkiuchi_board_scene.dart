@@ -294,13 +294,10 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     return TobiFrame(from.origin.lerp(to.origin, t), from.k + (to.k - from.k) * t, to.rig);
   }
 
-  /// The sides are now [next]: the board is laid out for them afresh, with
-  /// no room kept for the stack once [forPlay], and with [roomForOne] the
-  /// field zoomed out, if it must be, until a card more has room at every
-  /// free spot on the player's side (`IkkiuchiSides.playerRoomForOne`); and
-  /// set out anew,
-  /// every card gliding over [glide] from where it lies now, or from
-  /// [from] for one off the board, to its new home and size; the cards of
+  /// The sides are now [next]: the board is laid out for them afresh, the
+  /// stack gone once [forPlay], and set out anew, every card gliding over
+  /// [glide] from where it lies now, or from [from] for one off the board,
+  /// to its new home and size; the cards of
   /// [held], and those Tobi has still to lay down as the match opens, are
   /// kept off it. Unless a 送り札 goes on, [onSettled] is told once they
   /// are all home.
@@ -308,7 +305,6 @@ class IkkiuchiBoardScene extends ChangeNotifier {
           {Map<int, CardBox> from = const {},
           Set<int> held = const {},
           bool forPlay = false,
-          bool roomForOne = false,
           Duration glide = IkkiuchiPlayTuning.relayoutGlide}) =>
       _layOut(
           next,
@@ -316,8 +312,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
               tobiRows: next.tobi,
               playerRows: next.player,
               onTop: next.onTop,
-              opening: forPlay ? false : null,
-              need: roomForOne ? next.playerRoomForOne : 0),
+              opening: forPlay ? false : null),
           from: from,
           held: held,
           glide: glide);

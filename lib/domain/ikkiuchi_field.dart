@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../config/config.dart';
+import 'field_parts.dart';
 import 'ikkiuchi_geometry.dart';
 import 'ikkiuchi_layout.dart';
 import 'ikkiuchi_side.dart';
@@ -101,11 +102,30 @@ class IkkiuchiField {
         right: _tobiRows.map((r) => reach(r.right)).reduce(math.max),
       );
 
+  /// A full row across in a match of [rows] rows:
+  /// [IkkiuchiLayoutTuning.rowSlots] pitches less the gap after its last
+  /// card.
+  static double fullRow(int rows) => IkkiuchiLayoutTuning.rowSlots[rows]! * pitch - IkkiuchiFieldTuning.cardGap;
+
   /// The narrowest the field may be: each row at least its [rowWidth].
   double leastWidth() => [
         for (final r in _tobiRows) rowWidth(r.left, r.right),
         for (final r in _shown.map(_playerRow)) rowWidth(r.left.length, r.right.length, middle: r.middle.length),
       ].reduce(math.max);
+
+  /// The narrowest the field may be with a spot at every free place on the
+  /// player's side: Tobi's rows as they lie, each of the player's with a
+  /// card more at both its groups' inner ends and, in the row whose open
+  /// middle takes cards ([openMiddle]), in that middle; none wider than a
+  /// [fullRow] of the match's [rows].
+  double widthToPlace({FieldRow? openMiddle}) {
+    double withSpots(int i, IkkiuchiRow r) => math.min(fullRow(rows),
+        rowWidth(r.left.length + 1, r.right.length + 1, middle: r.middle.length + (i == openMiddle?.index ? 1 : 0)));
+    return [
+      for (final r in _tobiRows) rowWidth(r.left, r.right),
+      for (final i in _shown) withSpots(i, _playerRow(i)),
+    ].reduce(math.max);
+  }
 
   /// Where the open middle of Tobi's side is, across a field [width] wide:
   /// from the end of his widest group on the screen's left to the start of
@@ -116,18 +136,18 @@ class IkkiuchiField {
   /// would lie, in its [left] or right group, on a field [width] wide, the
   /// halves [gap] apart; null when the row is not shown or the card does
   /// not fit: the row with it would be narrower than its [rowWidth] allows.
-  /// Where the two groups' places would overlap, only the left one is
-  /// offered.
+  /// Where the room between the groups holds the two places only a card
+  /// gap apart or less, each takes its half of that room, the gap between.
   CardBox? playerEnd(int row, {required bool left, required double width, required double gap}) {
     final i = _shown.indexOf(row);
     if (i < 0) return null;
     final r = _playerRow(row);
-    bool fits(int l, int rt) => rowWidth(l, rt, middle: r.middle.length) <= width + _tolerance;
     final (l, rt) = (r.left.length, r.right.length);
-    if (!fits(left ? l + 1 : l, left ? rt : rt + 1)) return null;
-    final leftX = l * pitch, rightX = width - 1 - rt * pitch;
-    if (!left && fits(l + 1, rt) && leftX + 1 > rightX) return null;
-    return CardBox(Vec((left ? leftX : rightX) + 0.5, _playerTop(i, gap) + cardH / 2), 0.5, cardH / 2);
+    if (rowWidth(left ? l + 1 : l, left ? rt : rt + 1, middle: r.middle.length) > width + _tolerance) return null;
+    final open = _open(r, width);
+    final w = math.min(1.0, (open.to - open.from - IkkiuchiFieldTuning.cardGap) / 2);
+    final x = left ? open.from : open.to - w;
+    return CardBox(Vec(x + w / 2, _playerTop(i, gap) + cardH / 2), w / 2, cardH / 2);
   }
 
   /// Where the open middle of the player's [row] takes taps and drops on a

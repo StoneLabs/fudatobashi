@@ -434,13 +434,14 @@ void main() {
       expect(carry.faceAt(carry.end), TobiFace.pointing);
     });
 
-    test('in portrait the waiting card lies right of Tobi, above his side', () {
+    test("in portrait the waiting card lies big under the player's side, centred, its tags above the board's foot", () {
       final l = layoutOf(dealt(13));
       final wait = l.wait;
+      final tags = IkkiuchiSendStyle.look.stackTagRoom + IkkiuchiSendStyle.hintRoom;
       expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9));
-      expect(wait.right, lessThanOrEqualTo(l.size.x + 1e-9));
-      expect(wait.bottom, lessThan(l.field.top), reason: 'above his side');
-      expect(wait.left, greaterThanOrEqualTo(l.tobi.origin.x + rig.size.x * l.tobi.k - 1e-9), reason: 'right of him');
+      expect(wait.top, closeTo(l.field.bottom + IkkiuchiSendStyle.wait.margin, 1e-9), reason: "under the player's side");
+      expect(wait.center.dx, closeTo(l.size.x / 2, 1e-9), reason: 'centred');
+      expect(wait.bottom + tags, lessThanOrEqualTo(l.size.y - IkkiuchiBoardStyle.bottomGap + 1e-9), reason: 'its tags on it');
       expect(wait.width, greaterThan(2 * l.cardW), reason: 'big');
     });
 
@@ -456,7 +457,7 @@ void main() {
           final why = '$size seed $seed';
           final tobiRight = l.tobi.origin.x + rig.size.x * l.tobi.k;
           expect(wait.height / wait.width, closeTo(IkkiuchiField.cardH, 1e-9), reason: why);
-          expect(wait.width, greaterThan(style.scale * l.cardW), reason: '$why: bigger than before');
+          expect(wait.width, greaterThan(2 * l.cardW), reason: '$why: big');
           expect(wait.width, lessThanOrEqualTo(style.landscapeScale * l.cardW + 1e-9), reason: why);
           expect(wait.left, closeTo(tobiRight + style.gap, 1e-9), reason: '$why: just right of Tobi');
           expect(wait.top, greaterThanOrEqualTo(l.field.top), reason: "$why: in Tobi's half");
@@ -786,7 +787,7 @@ void main() {
         expect(flow.startReceiving(), isTrue);
         final carry = scene.board.carry!;
         final wait = scene.wait;
-        expect(wait.width, greaterThanOrEqualTo(IkkiuchiSendStyle.wait.scale * scene.layout.cardW - 1e-6), reason: '$o: big');
+        expect(wait.width, greaterThan(2 * scene.layout.cardW), reason: '$o: big');
         final set = carry.cardAt(carry.setAt)!;
         expect(Offset(set.centre.x, set.centre.y), offsetMoreOrLessEquals(wait.center, epsilon: 1e-6), reason: o);
         expect(2 * set.hw, closeTo(wait.width, 1e-6), reason: '$o: grown to its size');
@@ -882,6 +883,36 @@ void main() {
 
     Offset centreOf(FieldRect r) => Offset(r.x + r.w / 2, r.y + r.h / 2);
 
+    test("with room for one card in a row, Tobi's card tapped on either half spot joins that side's group", () {
+      for (final landscape in [false, true]) {
+        for (final part in [RowPart.left, RowPart.right]) {
+          final why = '${landscape ? 'landscape' : 'portrait'}, ${part.name}';
+          // The player's 下段 a card short of its limit.
+          final deal = dealt(4);
+          final p = deal.playerCards, cap = IkkiuchiLayout.rowLimit(IkkiuchiLayoutTuning.rows);
+          final sides = IkkiuchiSides(homes: deal.homes, tobi: deal.tobiCards, player: [
+            IkkiuchiRow(p.sublist(0, cap ~/ 2), p.sublist(cap ~/ 2, cap - 1)),
+            IkkiuchiRow(p.sublist(cap - 1, 20), p.sublist(20)),
+            const IkkiuchiRow([], []),
+          ]);
+          final scene = sceneOf(sides, landscape: landscape);
+          receive(scene);
+          final card = scene.send.card!;
+          final spots = {for (final (spot, rect) in scene.send.targets().freeSpots) spot: rect};
+          final left = spots[const ClusterEnd(FieldRow.lower, RowPart.left)]!;
+          final right = spots[const ClusterEnd(FieldRow.lower, RowPart.right)]!;
+          expect(left.w, lessThan(scene.layout.cardW), reason: '$why: half spots');
+          expect(right.x, greaterThan(left.x + left.w), reason: '$why: side by side');
+          scene.send.tap(centreOf(part == RowPart.left ? left : right));
+          final lower = scene.sides!.player[FieldRow.lower.index];
+          expect(part == RowPart.left ? lower.left.last : lower.right.last, card, reason: '$why: at its inner end');
+          expect(lower.length, cap, reason: '$why: the row full');
+          runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
+          expectHome(scene, '$why: placed');
+        }
+      }
+    });
+
     test("Tobi's card goes into the open middle by a tap, the next by a drag beside it, each where its landing shows",
         () {
       for (final landscape in [false, true]) {
@@ -891,6 +922,7 @@ void main() {
         receive(scene);
         final first = flow.card!;
         final (spot, rect) = flow.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
+        final cardW = scene.layout.cardW;
         expect(spot, const OpenMiddle(middleRow, 0), reason: why);
         final upper = scene.sides!.player[middleRow.index];
         final inner = [upper.left.last, upper.right.last].map((id) => scene.board.cards.card(id).box).toList();
@@ -904,9 +936,13 @@ void main() {
         expect(scene.sides!.player[middleRow.index].middle, [first], reason: why);
         runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
         expectHome(scene, '$why: placed in the middle');
-        final firstBox = scene.board.cards.card(first).box;
-        expect((shown.center - Offset(firstBox.centre.x, firstBox.centre.y)).distance, lessThan(1e-3),
-            reason: '$why: where its landing showed');
+        // In landscape the field keeps its size; in portrait it grows by the
+        // row's new spot, every card gliding on.
+        if (landscape) {
+          final firstBox = scene.board.cards.card(first).box;
+          expect((shown.center - Offset(firstBox.centre.x, firstBox.centre.y)).distance, lessThan(1e-3),
+              reason: '$why: where its landing showed');
+        }
 
         receive(scene);
         final second = flow.card!;
@@ -919,12 +955,12 @@ void main() {
           ..dragTo(Offset((right + open.right) / 2, middle.centre.y));
         expect(flow.drag?.spot, const OpenMiddle(middleRow, 1), reason: '$why: right of the middle card');
         final landing = flow.rectOf(flow.drag!.spot!)!;
-        final cardW = scene.layout.cardW;
         flow.dragEnd();
         expect(scene.sides!.player[middleRow.index].middle, [first, second], reason: why);
         runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
         expectHome(scene, '$why: the second in the middle');
-        expect(scene.layout.cardW, closeTo(cardW, 1e-9), reason: '$why: the field had room');
+        if (!landscape) continue;
+        expect(scene.layout.cardW, closeTo(cardW, 1e-9), reason: '$why: the field kept its size');
         final secondBox = scene.board.cards.card(second).box;
         expect((landing.center - Offset(secondBox.centre.x, secondBox.centre.y)).distance, lessThan(1e-3),
             reason: '$why: where its landing showed');
@@ -932,7 +968,9 @@ void main() {
     });
 
     test('並べ替え moves a middle card to a group end, and a group card into the middle beside another', () {
-      final scene = sceneOf(dealtWithMiddle(6, 2));
+      // In landscape, where the field keeps its size, so every card lies
+      // where its landing showed.
+      final scene = sceneOf(dealtWithMiddle(6, 2), landscape: true);
       final flow = scene.arrange..start();
       final [m, n] = scene.sides!.player[middleRow.index].middle;
       final box = scene.board.cards.card(m).box;
@@ -971,9 +1009,9 @@ void main() {
       expect(flow.active, isFalse);
     });
 
-    test('a card for a tight open middle has room there as it waits, the cards shrinking, until the row is full', () {
-      // The player's 上段 is their widest row, the field as narrow as it,
-      // its groups as near as they may be.
+    test('a tight open middle has room for a card all along, the field a full row, until the row is full', () {
+      // The player's 上段 is their widest row, 14 cards: room for one more,
+      // its spots counted, the field as wide as a full row.
       final sides = dealt(10);
       final p = sides.playerCards;
       final scene = sceneOf(IkkiuchiSides(homes: sides.homes, tobi: sides.tobiCards, player: [
@@ -982,17 +1020,15 @@ void main() {
         IkkiuchiRow(p.sublist(0, 7), p.sublist(7, 14)),
       ]));
       final before = scene.layout.cardW;
-      expect(scene.layout.field.width, closeTo(IkkiuchiField.rowWidth(7, 7) * before, 1e-6), reason: 'as narrow as the 上段');
+      expect(scene.layout.field.width, closeTo(IkkiuchiField.fullRow(IkkiuchiLayoutTuning.rows) * before, 1e-6),
+          reason: 'a full row');
       receive(scene);
       final card = scene.send.card!;
-      final waiting = scene.layout.cardW;
-      expect(waiting, lessThan(before), reason: 'the cards shrink as it waits');
-      expect(scene.layout.field.width, closeTo(IkkiuchiField.rowWidth(7, 7, middle: 1) * waiting, 1e-6),
-          reason: 'just room for it in the middle');
+      expect(scene.layout.cardW, closeTo(before, 1e-9), reason: 'the cards keep their size as it waits');
       final (spot, open) = scene.send.targets().freeSpots.firstWhere((s) => s.$1 is OpenMiddle);
       scene.send.tap(centreOf(open));
       expect(scene.sides!.player[middleRow.index].middle, [card]);
-      expect(scene.layout.cardW, closeTo(waiting, 1e-9), reason: 'the row had room');
+      expect(scene.layout.cardW, closeTo(before, 1e-9), reason: 'still a full row');
       runFor(scene, IkkiuchiPlayTuning.relayoutGlide * 2);
       expectHome(scene, 'placed in the middle');
 

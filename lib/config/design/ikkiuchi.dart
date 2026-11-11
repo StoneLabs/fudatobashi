@@ -4,8 +4,8 @@ part of '../design.dart';
 /// field on the tatami, its cards as big as the board lets them grow, the
 /// band across the middle, and Tobi at the far side. dp.
 abstract final class IkkiuchiBoardStyle {
-  /// Kept clear inside the board's left and right edges, and in portrait
-  /// above it and under the field too.
+  /// Kept clear inside the board's left and right edges and, in portrait,
+  /// its top; in portrait [bottomGap] is kept under the cards to place.
   static const double pad = 6;
   static const double bottomGap = 16;
 
@@ -96,14 +96,14 @@ abstract final class IkkiuchiBoardStyle {
 /// player lays it out with the placing's look ([look]) and drags a card of
 /// theirs onto Tobi's side, one spot, to send it. dp.
 abstract final class IkkiuchiSendStyle {
-  /// The waiting card, never smaller than the field's cards. In portrait at
-  /// most `maxHeight` tall and `tobiShare` of Tobi's height, or `scale`
-  /// field cards wide where that is bigger, `margin` clear of what is
-  /// around it. In landscape just right of Tobi, `gap` clear of him, in
+  /// The cards to place (the opening's stack, the card Tobi sends), never
+  /// smaller than the field's cards. In portrait `margin` under the
+  /// player's side, as tall as the room under it takes it, at most
+  /// `maxHeight`. In landscape just right of Tobi, `gap` clear of him, in
   /// the open middle of his half and over his cards where it must: at most
   /// `landscapeScale` field cards wide, and as tall as his half takes it
   /// with its tag, `gap` clear of the half's edges.
-  static const wait = (maxHeight: 150.0, tobiShare: 0.78, margin: 12.0, scale: 1.8, landscapeScale: 2.3, gap: 6.0);
+  static const wait = (maxHeight: 150.0, margin: 12.0, landscapeScale: 2.3, gap: 6.0);
 
   /// Under the waiting card's tag a second tag says how to place it, its
   /// words [hintFont], [hintRoom] tall; the layout keeps room for both.

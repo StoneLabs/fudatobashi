@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fudatobashi/config/config.dart';
 import 'package:fudatobashi/config/design.dart';
 import 'package:fudatobashi/data/poem.dart';
+import 'package:fudatobashi/domain/field_parts.dart';
 import 'package:fudatobashi/domain/ikkiuchi_board.dart';
 import 'package:fudatobashi/domain/ikkiuchi_cards.dart';
 import 'package:fudatobashi/domain/ikkiuchi_field.dart';
@@ -189,6 +190,7 @@ void main() {
   group("The board's layout", () {
     const eps = 1e-6;
     const pad = IkkiuchiBoardStyle.pad;
+    final waitTags = IkkiuchiSendStyle.look.stackTagRoom + IkkiuchiSendStyle.hintRoom;
 
     // Each row's cards, left to right, by side and height.
     Iterable<List<CardBox>> rowsOf(IkkiuchiBoardLayout l) {
@@ -229,7 +231,6 @@ void main() {
               capped = fieldW < l.size.x - 2 * pad - eps;
             }
             if (!capped) expect(lefts.reduce(math.min), closeTo(pad, eps), reason: '$why: the field spans the board');
-            var leastMiddle = double.infinity;
             for (final row in rowsOf(l)) {
               final gaps = [
                 for (var i = 1; i < row.length; i++)
@@ -240,7 +241,6 @@ void main() {
               expect(middles.length, lessThanOrEqualTo(1), reason: '$why: one open middle a row');
               for (final g in middles) {
                 expect(g, greaterThanOrEqualTo(IkkiuchiField.leastGap * u - eps), reason: '$why: groups apart');
-                leastMiddle = math.min(leastMiddle, g);
               }
             }
             for (final c in l.cards) {
@@ -267,14 +267,21 @@ void main() {
                 expect(rect.overlaps(tobiBox), isFalse, reason: '$why: Tobi sits clear of his cards');
               }
             } else {
-              tall = (tops.reduce(math.min) - pad - IkkiuchiBoardStyle.tobiMinRoom).abs() < eps;
-              wide = (leastMiddle - IkkiuchiField.leastGap * u).abs() < 1e-3;
+              // Tobi's room above his side, or a field card's room for the
+              // cards to place under the player's.
+              final wait = l.wait;
+              tall = (tops.reduce(math.min) - pad - IkkiuchiBoardStyle.tobiMinRoom).abs() < eps ||
+                  (wait.height - IkkiuchiField.cardH * u).abs() < eps &&
+                      (wait.bottom + waitTags - l.size.y + IkkiuchiBoardStyle.bottomGap).abs() < eps;
+              wide = !capped;
               expect(tobi.feet.y, lessThan(tops.reduce(math.min)), reason: '$why: Tobi stands above his side');
+              expect(l.band.center.dy, closeTo(l.size.y / 2, eps), reason: '$why: the band across the middle');
+              expect(wait.top, greaterThan(bottoms.reduce(math.max)), reason: "$why: the cards to place under the player's");
             }
             final widest = (u - IkkiuchiBoardStyle.maxCardW).abs() < eps;
             expect(tall || wide || widest, isTrue,
-                reason: '$why: the cards grow until the field fills the height, in landscape its width, in portrait '
-                    'a row closes, or they are as wide as they may be ($u)');
+                reason: '$why: the cards grow until the field fills the height or the width, or they are as wide as '
+                    'they may be ($u)');
           }
         }
       }
@@ -465,13 +472,113 @@ void main() {
       }
     });
 
-    test('a small board has small cards and a large one big ones, in portrait its widest', () {
+    // Rows of so many cards in their (left, right) groups, the cards
+    // numbered on from [from].
+    List<IkkiuchiRow> rowsWith(List<(int, int)> counts, {int from = 0}) {
+      var id = from;
+      List<int> next(int n) => [for (var i = 0; i < n; i++) id++];
+      return [for (final (l, r) in counts) IkkiuchiRow(next(l), next(r))];
+    }
+
+    // The phone in portrait with Tobi's rows and the player's of [tobi]
+    // and [player] cards.
+    IkkiuchiBoardLayout portraitWith(List<(int, int)> tobi, List<(int, int)> player) => IkkiuchiBoardLayout.of(
+        size: phone, landscape: false, tobiRows: rowsWith(tobi), playerRows: rowsWith(player, from: 100), rig: rig);
+
+    test("in portrait the field is as wide as its rows with a spot at every free place of the player's, growing and "
+        'shrinking with them, at most a full row', () {
+      double across(IkkiuchiBoardLayout l) => l.field.width / l.cardW;
+      const two = [(3, 3), (3, 3)];
+      final start = portraitWith(two, two);
+      expect(across(start), closeTo(IkkiuchiField.rowWidth(4, 4), eps), reason: "the player's rows with their spots");
+      final grown = portraitWith(two, [(5, 4), (3, 3)]);
+      expect(across(grown), closeTo(IkkiuchiField.rowWidth(6, 5), eps), reason: 'wider with a row grown');
+      expect(grown.cardW, lessThan(start.cardW), reason: 'the cards smaller');
+      final back = portraitWith(two, two);
+      expect([across(back), back.cardW], [across(start), start.cardW], reason: 'back as the row shrinks');
+      final his = portraitWith([(5, 5), (3, 3)], [(0, 0), (0, 0)]);
+      expect(across(his), closeTo(IkkiuchiField.rowWidth(5, 5), eps), reason: "Tobi's row the widest");
+      final cap = IkkiuchiLayout.rowLimit(2);
+      for (final row in [(5, 5), (cap - cap ~/ 2, cap ~/ 2)]) {
+        final l = portraitWith(two, [row, (3, 3)]);
+        expect(across(l), closeTo(IkkiuchiField.fullRow(2), eps), reason: '$row: at most a full row');
+        expect(l.field.width, closeTo(phone.width - 2 * pad, eps), reason: '$row: the width limits the cards');
+      }
+      final open = portraitWith([(3, 3), (3, 3), (3, 3)], [(3, 3), (3, 3), (0, 0)]);
+      expect(across(open), closeTo(IkkiuchiField.rowWidth(4, 4), eps),
+          reason: 'an empty open middle row with its three spots is narrower');
+      final middle = IkkiuchiBoardLayout.of(
+          size: phone,
+          landscape: false,
+          tobiRows: rowsWith([(3, 3), (3, 3), (3, 3)]),
+          playerRows: [...rowsWith([(3, 3), (3, 3)], from: 100), const IkkiuchiRow([200, 201], [202, 203], middle: [204, 205])],
+          rig: rig);
+      expect(across(middle), closeTo(IkkiuchiField.rowWidth(3, 3, middle: 3), eps), reason: 'the open middle with a spot');
+    });
+
+    test('in portrait the band lies across the middle, Tobi above his side, and the cards to place under the '
+        "player's side, in the opening and in play", () {
+      for (final rows in [1, 2, 3]) {
+        for (final opening in [true, false]) {
+          final why = '$rows rows${opening ? ', opening' : ''}';
+          final l = IkkiuchiBoardLayout.of(
+            size: phone,
+            landscape: false,
+            tobiRows: rowsWith([for (var r = 0; r < rows; r++) (2, 2)]),
+            playerRows: rowsWith([for (var r = 0; r < rows; r++) opening ? (0, 0) : (2, 2)], from: 100),
+            rig: rig,
+            opening: opening,
+          );
+          expect(l.band.center.dy, closeTo(phone.height / 2, eps), reason: why);
+          expect(l.field.top + l.field.height / 2, closeTo(phone.height / 2, eps), reason: '$why: the sides either side');
+          expect(l.tobi.feet.y, lessThan(l.field.top), reason: '$why: Tobi on his side');
+          expect(l.tobi.origin.y, greaterThanOrEqualTo(pad - eps), reason: '$why: on the board');
+          expect(l.wait.top, closeTo(l.field.bottom + IkkiuchiSendStyle.wait.margin, eps), reason: why);
+          expect(l.wait.bottom + waitTags, lessThanOrEqualTo(phone.height - IkkiuchiBoardStyle.bottomGap + eps), reason: why);
+          expect(l.stack, opening ? l.wait : isNull, reason: '$why: the stack where a sent card waits');
+        }
+      }
+    });
+
+    test('a full row has no spot; a row with room for one card more has two half spots, one at each group', () {
+      for (final landscape in [false, true]) {
+        for (final rows in [1, 2, 3]) {
+          final why = '${landscape ? 'landscape' : 'portrait'}, $rows rows';
+          final cap = IkkiuchiLayout.rowLimit(rows);
+          IkkiuchiBoardLayout withLower(int n) => IkkiuchiBoardLayout.of(
+                size: landscape ? phone.flipped : phone,
+                landscape: landscape,
+                tobiRows: rowsWith([for (var r = 0; r < rows; r++) (2, 2)]),
+                playerRows: rowsWith([(n - n ~/ 2, n ~/ 2), for (var r = 1; r < rows; r++) (2, 2)], from: 100),
+                rig: rig,
+              );
+          final full = withLower(cap);
+          expect([full.playerEnd(FieldRow.lower, RowPart.left), full.playerEnd(FieldRow.lower, RowPart.right)],
+              [isNull, isNull], reason: '$why: full');
+          final l = withLower(cap - 1), u = l.cardW;
+          final left = l.playerEnd(FieldRow.lower, RowPart.left)!, right = l.playerEnd(FieldRow.lower, RowPart.right)!;
+          final lower = l.cards.where((c) => c.side == IkkiuchiSide.player && c.id < 100 + cap).map((c) => c.box).toList()
+            ..sort((a, b) => a.centre.x.compareTo(b.centre.x));
+          final split = lower.indexed.firstWhere((e) => e.$1 > 0 && e.$2.centre.x - lower[e.$1 - 1].centre.x > 1.5 * u).$1;
+          final (inLeft, inRight) = (lower[split - 1], lower[split]);
+          const gap = IkkiuchiFieldTuning.cardGap;
+          expect(left.x, closeTo(inLeft.centre.x + inLeft.hw + gap * u, 1e-6), reason: '$why: at the left group');
+          expect(right.x + right.w, closeTo(inRight.centre.x - inRight.hw - gap * u, 1e-6), reason: '$why: at the right');
+          expect(right.x - left.x - left.w, closeTo(gap * u, 1e-6), reason: '$why: a card gap between them');
+          expect(left.w, closeTo(right.w, 1e-6), reason: '$why: halves');
+          expect(left.w, lessThan(u), reason: '$why: under a card wide');
+          expect(left.h, closeTo(IkkiuchiField.cardH * u, 1e-6), reason: '$why: a card tall');
+        }
+      }
+    });
+
+    test('a small board has small cards and a large one big ones', () {
       for (final landscape in [false, true]) {
         final widths = {
           for (final MapEntry(:key, :value) in sizes.entries) key: layoutFor(3, 2000, landscape: landscape, size: value).cardW,
         };
         expect(widths['small']!, lessThan(widths['phone']!));
-        expect(widths['large'], landscape ? greaterThan(widths['phone']!) : IkkiuchiBoardStyle.maxCardW);
+        expect(widths['large'], greaterThan(widths['phone']!));
       }
     });
   });

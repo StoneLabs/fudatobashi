@@ -126,7 +126,7 @@ class IkkiuchiSendFlow {
     if (_stage != IkkiuchiSendStage.carrying || scene.board.carrying) return;
     _stage = IkkiuchiSendStage.waiting;
     scene.board.heldFace = TobiFace.pointing;
-    scene.relayout(sides.without(id), roomForOne: true);
+    scene.relayout(sides.without(id));
   }
 
   /// Once his side has made room for card [id] the player sent, his arm

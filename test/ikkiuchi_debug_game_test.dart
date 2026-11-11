@@ -801,7 +801,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('v: Receiving Card, his card waiting just right of him, placed by a tap; then back to the hold',
+    testWidgets("v: Receiving Card, his card waiting by him or under the player's side, placed by a tap; then back to "
+        'the hold',
         (tester) async {
       final p = await open(tester);
       for (final landscape in [true, false]) {
@@ -816,9 +817,13 @@ void main() {
         await run(tester, 600);
         final wait = s.wait, tobi = s.layout.tobi;
         final tobiRight = tobi.origin.x + tobi.rig.size.x * tobi.k;
-        expect(wait.left, greaterThanOrEqualTo(tobiRight - 1e-6), reason: '$o: right of Tobi');
-        expect(wait.width, greaterThan(IkkiuchiSendStyle.wait.scale * s.layout.cardW - 1e-6), reason: '$o: big');
-        if (landscape) expect(wait.bottom, lessThan(s.layout.band.top), reason: "in Tobi's half");
+        expect(wait.width, greaterThan(2 * s.layout.cardW), reason: '$o: big');
+        if (landscape) {
+          expect(wait.left, greaterThanOrEqualTo(tobiRight - 1e-6), reason: 'right of Tobi');
+          expect(wait.bottom, lessThan(s.layout.band.top), reason: "in Tobi's half");
+        } else {
+          expect(wait.top, greaterThan(s.layout.field.bottom), reason: "under the player's side");
+        }
         await capture(tester, 'game_receiving_$o');
         final (_, rect) = s.send.targets().freeSpots.first;
         await tester.tapAt(onScreen(tester, Vec(rect.x + rect.w / 2, rect.y + rect.h / 2)));
