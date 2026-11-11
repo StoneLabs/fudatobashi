@@ -2401,12 +2401,14 @@ void main() {
 
         // The field zoomed out, to match_zoom/: Tobi sends the player
         // [sends] cards by hand in the memory time, each placed in their
-        // 下段 where it has a spot; his last one waiting with the spot opened
-        // for it, then placed. Blitz in 2 rows after 10, Bullet in 2 rows
-        // near its most cards on a side, and Rapid with a row near its most.
+        // 下段 where it has a spot; the first waiting with a row a card short
+        // of its most, its two half spots showing; his last one waiting,
+        // then placed. Blitz in 2 rows until the side is full, Bullet in 2
+        // rows near its most cards on a side, and Rapid with a row near its
+        // most.
         if (lang == 'ja' && scale == 1.0) {
           for (final (name, perSide, rows, sends) in [
-            ('blitz_2rows', IkkiuchiMode.blitz.perSide, 2, 10),
+            ('blitz_2rows', IkkiuchiMode.blitz.perSide, 2, 2 * IkkiuchiLayout.rowLimit(2) - IkkiuchiMode.blitz.perSide),
             ('bullet_2rows', IkkiuchiMode.bullet.perSide, 2, IkkiuchiMode.bullet.perSide - 1),
             ('rapid', IkkiuchiMode.rapid.perSide, IkkiuchiMode.rapid.defaultRows, 8),
           ]) {
@@ -2419,6 +2421,7 @@ void main() {
                 ..finishTobi();
               flow.donePlacing();
               await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+              var half = false;
               for (var i = 1; i <= sends; i++) {
                 await playUntil(tester, () => scene.atRest);
                 flow.sendByHand(IkkiuchiSide.opponent);
@@ -2426,6 +2429,10 @@ void main() {
                 await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
                 final free = [for (final (spot, _) in send.targets().freeSpots) spot];
                 final spot = free.firstWhere((s) => send.placeOf(s)?.row == FieldRow.lower, orElse: () => free.first);
+                if (!half && scene.sides!.player.any((r) => r.length == IkkiuchiLayout.rowLimit(rows) - 1)) {
+                  half = true;
+                  await capture(tester, 'match_zoom/${orient}_${name}_0_half_spots', lang);
+                }
                 if (i == sends) await capture(tester, 'match_zoom/${orient}_${name}_1_waiting', lang);
                 send.tap(send.rectOf(spot)!.center);
               }
@@ -2436,6 +2443,26 @@ void main() {
               await tester.pumpWidget(const SizedBox());
             });
           }
+
+          // The user's own match: 16 a side in 2 rows, the opening with 14
+          // of the player's cards placed.
+          testWidgets('match_zoom_${orient}_custom_2rows_16', (tester) async {
+            const setup = IkkiuchiSetup.free(
+                opponentRating: 1600, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2, memorise: Duration(minutes: 15));
+            final flow = await startOn(tester, setup), scene = flow.scene, opening = scene.opening;
+            await play(tester, const Duration(seconds: 6));
+            opening.finishTobi();
+            for (var i = 0; i < 14; i++) {
+              final (_, r) = opening.targets().freeSpots.first;
+              opening.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
+              await play(tester, IkkiuchiPlayTuning.relayoutGlide);
+            }
+            await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+            await capture(tester, 'match_zoom/${orient}_custom_2rows_16_placing', lang);
+            expect(tester.takeException(), isNull);
+            await leave(tester);
+            await tester.pumpWidget(const SizedBox());
+          });
         }
       }
     }
