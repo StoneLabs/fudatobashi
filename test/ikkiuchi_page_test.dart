@@ -1308,9 +1308,15 @@ void main() {
     const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15));
 
     /// A match of [playing], free of [setup] by default, dealt from [seed] on the user's phone turned,
-    /// both sides laid out, in its memory time, Tobi reaching for no card.
-    Future<IkkiuchiMatchFlow> laidOut(WidgetTester tester, Progress p, int seed, {IkkiuchiSetup? playing}) async {
-      await showPage(tester, p, phone: usersPhoneLandscape);
+    /// or upright with the auto turn off unless [landscape], both sides laid out, in its memory time,
+    /// Tobi reaching for no card.
+    Future<IkkiuchiMatchFlow> laidOut(WidgetTester tester, Progress p, int seed,
+        {IkkiuchiSetup? playing, bool landscape = true}) async {
+      if (!landscape) {
+        await tester.runAsync(
+            () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(autoTurn: false))));
+      }
+      await showPage(tester, p, phone: landscape ? usersPhoneLandscape : usersPhone);
       unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
           .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: playing ?? setup, seed: seed))));
       await tester.pump();
@@ -1323,16 +1329,17 @@ void main() {
       flow.rating = null;
       await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
       expect(flow.stage, IkkiuchiStage.memoryTime);
+      expect(flow.scene.layout.landscape, landscape);
       return flow;
     }
 
-    /// [from] sends the other cards by hand until it has one left, each put
-    /// down as the 送り札 has it: the player's dragged over Tobi's side, his
-    /// tapped onto a free spot of theirs.
-    Future<void> downToOne(WidgetTester tester, IkkiuchiMatchFlow flow, IkkiuchiSide from) async {
+    /// [from] sends the other cards by hand until it has [left] left, each
+    /// put down as the 送り札 has it: the player's dragged over Tobi's side,
+    /// his tapped onto a free spot of theirs.
+    Future<void> downTo(WidgetTester tester, IkkiuchiMatchFlow flow, IkkiuchiSide from, {int left = 1}) async {
       final scene = flow.scene, send = scene.send;
-      int left() => from == IkkiuchiSide.player ? scene.sides!.playerCards.length : scene.sides!.tobiCards.length;
-      while (left() > 1) {
+      int has() => from == IkkiuchiSide.player ? scene.sides!.playerCards.length : scene.sides!.tobiCards.length;
+      while (has() > left) {
         flow.sendByHand(from);
         if (from == IkkiuchiSide.player) {
           final card = scene.sides!.playerCards.first;
@@ -1455,7 +1462,7 @@ void main() {
       // last card left on their side.
       final flow = await laidOut(tester, p, 3);
       final scene = flow.scene;
-      await downToOne(tester, flow, IkkiuchiSide.player);
+      await downTo(tester, flow, IkkiuchiSide.player);
       final last = scene.sides!.playerCards.single;
       expect([flow.tally.player, flow.tally.opponent], [1, 9]);
       flow.endMemoryTime();
@@ -1501,7 +1508,7 @@ void main() {
       final p = await open(tester, lang: 'ja');
       final flow = await laidOut(tester, p, 3);
       final scene = flow.scene;
-      await downToOne(tester, flow, IkkiuchiSide.opponent);
+      await downTo(tester, flow, IkkiuchiSide.opponent);
       final last = scene.sides!.tobiCards.single;
       expect([flow.tally.player, flow.tally.opponent], [9, 1]);
       flow
@@ -1539,10 +1546,10 @@ void main() {
     /// card then sent across (seed 3), run on to [stage]; [playing] is its
     /// setup.
     Future<IkkiuchiMatchFlow> decidedAt(WidgetTester tester, Progress p, IkkiuchiStage stage,
-        {IkkiuchiSetup? playing}) async {
-      final flow = await laidOut(tester, p, 3, playing: playing);
+        {IkkiuchiSetup? playing, bool landscape = true}) async {
+      final flow = await laidOut(tester, p, 3, playing: playing, landscape: landscape);
       final scene = flow.scene;
-      await downToOne(tester, flow, IkkiuchiSide.player);
+      await downTo(tester, flow, IkkiuchiSide.player);
       flow.endMemoryTime();
       await toRead(tester, flow);
       for (var i = 0; i < 10 && scene.board.called == null; i++) {
@@ -1553,6 +1560,78 @@ void main() {
       await playUntil(tester, () => flow.stage == stage);
       expect(flow.tally.decided, isTrue);
       return flow;
+    }
+
+    for (final landscape in [true, false]) {
+      final orient = landscape ? 'landscape' : 'portrait';
+
+      testWidgets("Tobi's card for the player's full side ($orient) is not sent: the call strip says so for its time, "
+          'and the match goes on', (tester) async {
+        final p = await open(tester, lang: 'ja');
+        // 16 a side in 2 rows: the player's side is full at 11 cards a row.
+        const playing = IkkiuchiSetup.free(
+            opponentRating: 1600, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2, memorise: Duration(minutes: 15));
+        final flow = await laidOut(tester, p, 3, playing: playing, landscape: landscape);
+        final scene = flow.scene, send = scene.send;
+        while (scene.sides!.receives(IkkiuchiSide.player)) {
+          flow.sendByHand(IkkiuchiSide.opponent);
+          await playUntil(tester, () => send.stage == IkkiuchiSendStage.waiting);
+          send.tap(send.rectOf(send.targets().freeSpots.first.$1)!.center);
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.memoryTime);
+        }
+        final his = scene.sides!.tobiCards, tally = (flow.tally.player, flow.tally.opponent);
+        flow.sendByHand(IkkiuchiSide.opponent);
+        expect([flow.stage, flow.fullSide], [IkkiuchiStage.noSend, IkkiuchiSide.player]);
+        await play(tester, const Duration(milliseconds: 600));
+        await capture(tester, 'match_no_send_$orient', 'ja');
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.memoryTime);
+        expect(scene.sides!.tobiCards, his, reason: 'he keeps his card');
+        expect((flow.tally.player, flow.tally.opponent), tally);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets("Tobi's last two cards ($orient), sent for faults on both sides of a からふだ, lie side by side on "
+          "top of the player's side", (tester) async {
+        final p = await open(tester, lang: 'ja');
+        final flow = await laidOut(tester, p, 3, landscape: landscape);
+        final scene = flow.scene;
+        await downTo(tester, flow, IkkiuchiSide.opponent, left: 2);
+        final last = scene.sides!.tobiCards.toList();
+        flow
+          ..askKarafuda()
+          ..endMemoryTime();
+        await toRead(tester, flow);
+        expect(scene.board.called, isNull, reason: 'a からふだ');
+        touch(flow, scene.sides!.playerCards.first);
+        await tester.pump(const Duration(milliseconds: 16));
+        touch(flow, last.first);
+        await playUntil(tester, () => scene.sides!.onTop.length == 2);
+        await play(tester, IkkiuchiMatchTuning.finalSendGlide + const Duration(milliseconds: 100));
+        expect(flow.stage, IkkiuchiStage.finalSend);
+        expect(scene.sides!.onTop.values, [IkkiuchiSide.player, IkkiuchiSide.player]);
+        final [a, b] = [for (final c in scene.sides!.onTop.keys) scene.board.cards.card(c).box];
+        expect(b.centre.y, closeTo(a.centre.y, 0.5), reason: 'side by side');
+        expect((b.centre.x - a.centre.x).abs(), greaterThan(2 * a.hw), reason: 'not overlapping');
+        expect((a.centre.x + b.centre.x) / 2, closeTo(scene.field.center.dx, 0.5), reason: 'over the middle');
+        expect(a.centre.y - a.hh, closeTo(scene.layout.band.bottom, 0.5), reason: 'over the row by the centre line');
+        await capture(tester, 'match_on_top_two_$orient', 'ja');
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.result);
+        expect(flow.result, IkkiuchiResult.lost);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets("the player's last card sent as their take decides the match ($orient) lies on top of Tobi's side",
+          (tester) async {
+        final p = await open(tester, lang: 'ja');
+        final flow = await decidedAt(tester, p, IkkiuchiStage.finalSend, landscape: landscape);
+        final card = flow.scene.sides!.onTop.keys.single;
+        await play(tester, IkkiuchiMatchTuning.finalSendGlide + const Duration(milliseconds: 100));
+        expectLanded(flow, card, IkkiuchiSide.opponent);
+        await capture(tester, 'match_on_top_one_$orient', 'ja');
+        await tester.pumpWidget(const SizedBox());
+      });
     }
 
     /// The end button held as long as it takes, then the system's back.
