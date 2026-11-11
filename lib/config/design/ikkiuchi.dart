@@ -9,10 +9,12 @@ abstract final class IkkiuchiBoardStyle {
   static const double pad = 6;
   static const double bottomGap = 16;
 
-  /// The band between the sides: its height, just enough for the called
-  /// card's kimariji and a note under it; the ink rules along it, its fill,
-  /// and the kimariji.
-  static const double band = 40;
+  /// The band between the sides in portrait: its height, room for the game
+  /// column's parts along it (`IkkiuchiColumnStyle`) with the called card's
+  /// kimariji and a note under it in its middle, [words] tall there; the
+  /// ink rules along it, its fill, and the kimariji.
+  static const double band = 106;
+  static const double words = 40;
   static const double bandRule = 3;
 
   /// In landscape there is no band: the sides lie [landscapeGap] apart.
@@ -320,11 +322,17 @@ abstract final class IkkiuchiCallStyle {
 
 /// The game column at the board's right edge in landscape
 /// (`IkkiuchiMatchColumn`), [width] wide, [edge] in from the board's right,
-/// top and bottom edges, and at least [fieldGap] clear of the field. dp.
+/// top and bottom edges, and at least [fieldGap] clear of the field. In
+/// portrait its parts lie along the band instead, each as wide as the
+/// column: 終了 and the score at its left end, the buttons at its right,
+/// [edge] in from the board's sides, [bandGap] apart and from the call
+/// between them, and [bandInset] in from the band's top and bottom. dp.
 abstract final class IkkiuchiColumnStyle {
   static const double width = 54;
   static const double edge = 6;
   static const double fieldGap = 8;
+  static const double bandGap = 6;
+  static const double bandInset = 7;
 
   /// 終了 at its top: a small arming button ([end]), its flag [endIcon].
   static const HoldConfirmLook end = HoldConfirmLook(

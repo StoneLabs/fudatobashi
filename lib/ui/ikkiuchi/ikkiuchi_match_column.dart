@@ -26,22 +26,25 @@ typedef IkkiuchiColumnButton = ({String label, VectorArt icon, Color fill, VoidC
 /// ([canEnd]); the score in its middle, each side's cards left
 /// ([tobi], [player]), split on the line [split] down the column, the
 /// middle of the gap between the sides; and the [buttons] at its foot, the
-/// last lowest, as 並べ替え or 完了. Only 終了 and the buttons not faded take
-/// touches; the rest lets them through to what lies under it.
+/// last lowest, as 並べ替え or 完了. Without [split] its parts lie along the
+/// band in portrait, as tall as it ([IkkiuchiColumnStyle]): 終了 and the
+/// score at its left end, the buttons at its right, the last rightmost.
+/// Only 終了 and the buttons not faded take touches; the rest lets them
+/// through to what lies under it.
 class IkkiuchiMatchColumn extends StatelessWidget {
   const IkkiuchiMatchColumn({
     super.key,
     required this.tobi,
     required this.player,
-    required this.split,
     required this.buttons,
     required this.onEnd,
+    this.split,
     this.surrender = false,
     this.canEnd = true,
   });
 
   final int tobi, player;
-  final double split;
+  final double? split;
   final List<IkkiuchiColumnButton> buttons;
   final VoidCallback onEnd;
   final bool surrender, canEnd;
@@ -50,43 +53,31 @@ class IkkiuchiMatchColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final endSeconds = (IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond).round();
+    final end = IgnorePointer(
+      ignoring: !canEnd,
+      child: Opacity(
+        opacity: canEnd ? 1 : IkkiuchiColumnStyle.dimmed,
+        child: HoldToConfirmButton(
+          duration: IkkiuchiMatchTuning.endHold,
+          label: surrender ? s.ikkiuchiSurrender : s.end,
+          hint: surrender ? s.ikkiuchiSurrenderHint(endSeconds) : s.ikkiuchiEndHint(endSeconds),
+          look: IkkiuchiColumnStyle.end,
+          haptics: ProgressScope.of(context).settings.haptics,
+          icon: MangaIcon(IconArt.end,
+              size: IkkiuchiColumnStyle.endIcon, color: Palette.paper, strokeWidth: IkkiuchiColumnStyle.endIconStroke),
+          onConfirmed: onEnd,
+        ),
+      ),
+    );
+    final tobiScore = IgnorePointer(child: _ScoreHalf(name: s.ikkiuchiTobi, count: tobi, top: true));
+    final playerScore = IgnorePointer(child: _ScoreHalf(name: s.ikkiuchiYou, count: player, top: false));
+    final split = this.split;
+    if (split == null) return _alongBand(end, tobiScore, playerScore);
     return LayoutBuilder(
       builder: (context, box) => Stack(clipBehavior: Clip.none, children: [
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: IgnorePointer(
-              ignoring: !canEnd,
-              child: Opacity(
-                opacity: canEnd ? 1 : IkkiuchiColumnStyle.dimmed,
-                child: HoldToConfirmButton(
-                  duration: IkkiuchiMatchTuning.endHold,
-                  label: surrender ? s.ikkiuchiSurrender : s.end,
-                  hint: surrender ? s.ikkiuchiSurrenderHint(endSeconds) : s.ikkiuchiEndHint(endSeconds),
-                  look: IkkiuchiColumnStyle.end,
-                  haptics: ProgressScope.of(context).settings.haptics,
-                  icon: MangaIcon(IconArt.end,
-                      size: IkkiuchiColumnStyle.endIcon, color: Palette.paper, strokeWidth: IkkiuchiColumnStyle.endIconStroke),
-                  onConfirmed: onEnd,
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: box.maxHeight - split,
-          child: IgnorePointer(child: _ScoreHalf(name: s.ikkiuchiTobi, count: tobi, top: true)),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          top: split,
-          child: IgnorePointer(child: _ScoreHalf(name: s.ikkiuchiYou, count: player, top: false)),
-        ),
+        Positioned(top: 0, left: 0, right: 0, child: Center(child: end)),
+        Positioned(left: 0, right: 0, bottom: box.maxHeight - split, child: tobiScore),
+        Positioned(left: 0, right: 0, top: split, child: playerScore),
         Positioned(
           left: 0,
           right: 0,
@@ -98,6 +89,30 @@ class IkkiuchiMatchColumn extends StatelessWidget {
             ],
           ]),
         ),
+      ]),
+    );
+  }
+
+  /// The parts along the band, each as wide as the column, shrunk to fit
+  /// where it would be taller than the band takes.
+  Widget _alongBand(Widget end, Widget tobiScore, Widget playerScore) {
+    Widget part(Widget child) =>
+        FittedBox(fit: BoxFit.scaleDown, child: SizedBox(width: IkkiuchiColumnStyle.width, child: child));
+    const gap = SizedBox(width: IkkiuchiColumnStyle.bandGap);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: IkkiuchiColumnStyle.edge, vertical: IkkiuchiColumnStyle.bandInset),
+      child: Row(children: [
+        part(Center(child: end)),
+        gap,
+        part(Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [tobiScore, playerScore])),
+        const Spacer(),
+        for (final (i, button) in buttons.indexed) ...[
+          if (i > 0) gap,
+          part(_FootButton(button)),
+        ],
       ]),
     );
   }

@@ -32,10 +32,11 @@ import '../../domain/ikkiuchi_side.dart';
 /// reach the board's top and bottom edges. Landscape keeps the game
 /// [column] down the board's right edge, from its top to its bottom however
 /// tall the field is: the field lies centred where it can, else as far
-/// right as leaves the column clear. A card Tobi sends waits at
-/// [wait], big, right of him: in portrait just above his side; in landscape
-/// in the open middle of his half, over his cards where it must. No room is
-/// kept for it.
+/// right as leaves the column clear; portrait lays the column's parts
+/// along the band, the call in its middle ([words]). A card Tobi sends
+/// waits at [wait], big, right of him: in portrait just above his side;
+/// in landscape in the open middle of his half, over his cards where it
+/// must. No room is kept for it.
 ///
 /// While the match opens, the player's cards wait in a [stack]: in
 /// landscape room is kept for it right of the field, beside the player's
@@ -249,8 +250,22 @@ class IkkiuchiBoardLayout {
   final Rect wait;
 
   /// The game column down the board's right edge, top to bottom, in
-  /// landscape only.
+  /// landscape only; in portrait its parts lie along the [band].
   final Rect? column;
+
+  /// Where the call, or what to do in its place, lies: in landscape across
+  /// the field in the gap; in portrait in the band's middle, between the
+  /// game column's parts at its ends.
+  Rect get words => wordsAt(band, field);
+
+  /// [words] with the band at [band] and the field at [field].
+  Rect wordsAt(Rect band, Rect field) => landscape
+      ? Rect.fromLTRB(field.left, band.top, field.right, band.bottom)
+      : Rect.fromCenter(center: band.center, width: band.width - 2 * _bandEnd, height: IkkiuchiBoardStyle.words);
+
+  /// The room the game column's parts take at each end of the band, and
+  /// the gap from them.
+  static const _bandEnd = IkkiuchiColumnStyle.edge + 2 * (IkkiuchiColumnStyle.width + IkkiuchiColumnStyle.bandGap);
 
   /// Where the player's stack lies while the match opens; null once laid
   /// out for play.

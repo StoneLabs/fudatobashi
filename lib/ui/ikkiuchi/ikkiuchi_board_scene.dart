@@ -293,6 +293,10 @@ class IkkiuchiBoardScene extends ChangeNotifier {
   Rect? get column => _from == null ? _layout.column : Rect.lerp(_from!.column, _layout.column, _shift);
   Rect get wait => _from == null ? _layout.wait : Rect.lerp(_from!.wait, _layout.wait, _shift)!;
 
+  /// Where the call lies now, moving with the band and the field
+  /// ([IkkiuchiBoardLayout.words]).
+  Rect get words => _layout.wordsAt(band, field);
+
   /// Where the player's stack lies while the match opens.
   Rect? get stack => _layout.stack;
 
@@ -368,10 +372,12 @@ class IkkiuchiBoardScene extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The call on one line, narrowed where it is wider than the room for
+  /// it ([IkkiuchiBoardLayout.words]), and the note under it.
   ui.Picture? _recordBand() {
     final text = kimariji;
     if (text == null) return null;
-    final band = _layout.band;
+    final band = _layout.band, words = _layout.words;
     final dim = karafuda != null;
     final call = TextPainter(
       text: TextSpan(children: [
@@ -390,7 +396,7 @@ class IkkiuchiBoardScene extends ChangeNotifier {
         color: dim ? IkkiuchiBoardStyle.karafudaColor : IkkiuchiBoardStyle.kimarijiColor,
       )),
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: band.width);
+    )..layout();
     final small = note == null
         ? null
         : (TextPainter(
@@ -407,12 +413,18 @@ class IkkiuchiBoardScene extends ChangeNotifier {
             maxLines: 1,
             ellipsis: IkkiuchiBoardStyle.noteEllipsis,
           )..layout(maxWidth: band.width - 2 * IkkiuchiBoardStyle.pad));
-    final height = call.height + (small == null ? 0 : IkkiuchiBoardStyle.noteGap + small.height);
-    final top = band.center.dy - height / 2;
+    final fit = math.min(1.0, words.width / call.width);
+    final callH = call.height * fit;
+    final height = callH + (small == null ? 0 : IkkiuchiBoardStyle.noteGap + small.height);
+    final top = words.center.dy - height / 2;
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    call.paint(canvas, Offset(band.center.dx - call.width / 2, top));
-    small?.paint(canvas, Offset(band.center.dx - small.width / 2, top + call.height + IkkiuchiBoardStyle.noteGap));
+    final canvas = Canvas(recorder)
+      ..save()
+      ..translate(words.center.dx, top)
+      ..scale(fit);
+    call.paint(canvas, Offset(-call.width / 2, 0));
+    canvas.restore();
+    small?.paint(canvas, Offset(words.center.dx - small.width / 2, top + callH + IkkiuchiBoardStyle.noteGap));
     call.dispose();
     small?.dispose();
     return recorder.endRecording();

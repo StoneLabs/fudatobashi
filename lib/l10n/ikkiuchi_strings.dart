@@ -12,11 +12,9 @@ import 'strings.dart';
 /// player's side, the game column, a からふだ's tag, how a read ended, the
 /// results after a match, and History's list of matches and a match's page.
 extension IkkiuchiStrings on S {
-  /// The band while a card is sent: its title, and what the player does,
-  /// sending one of theirs or placing Tobi's; in landscape the shorter
-  /// [ikkiuchiSendShort] for sending.
+  /// The call's place while a card is sent: its title, and what the
+  /// player does, sending one of theirs or placing Tobi's.
   String get ikkiuchiSent => t('ikkiuchiSent');
-  String get ikkiuchiSendYours => t('ikkiuchiSendYours');
   String get ikkiuchiSendShort => t('ikkiuchiSendShort');
   String get ikkiuchiPlaceTobis => t('ikkiuchiPlaceTobis');
 

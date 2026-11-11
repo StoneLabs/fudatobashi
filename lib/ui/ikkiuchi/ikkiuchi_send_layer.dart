@@ -22,8 +22,8 @@ enum IkkiuchiLayerPart { under, over, top }
 /// ([IkkiuchiSendStyle.look]). Its [part] under the board's cards: Tobi's
 /// side as one dashed spot while the player sends him a card, lit while
 /// the card dragged is over it; the dashed spots Tobi's waiting card may
-/// go. Over them: the band's words while a card is sent, Tobi's balloon
-/// while his card waits, where a card dragged would land, and the touches.
+/// go. Over them: Tobi's balloon while his card waits, where a card
+/// dragged would land, and the touches.
 /// On top: Tobi's card waiting as a stack of one, the hint under its tag
 /// to drag it or tap a spot, and a card being dragged.
 class IkkiuchiSendLayer extends StatelessWidget {
@@ -83,15 +83,6 @@ class IkkiuchiSendLayer extends StatelessWidget {
       onDrag: flow.dragTo,
       onDragEnd: flow.dragEnd,
       child: Stack(clipBehavior: Clip.none, children: [
-        if (!scene.layout.landscape)
-          Positioned.fromRect(
-          rect: scene.band,
-          child: IkkiuchiBandWords(title: s.ikkiuchiSent, line: switch (stage) {
-            IkkiuchiSendStage.sending => s.ikkiuchiSendYours,
-            IkkiuchiSendStage.placing => s.ikkiuchiTobiPlaces,
-            _ => s.ikkiuchiPlaceTobis,
-          }),
-        ),
         if (stage == IkkiuchiSendStage.waiting)
           Positioned.fromRect(rect: _balloonRect(), child: _Balloon(s.ikkiuchiHereYouGo)),
         if (landing != null) Positioned.fromRect(rect: landing, child: const PlacingLanding(look: _look)),
@@ -170,36 +161,6 @@ class _UnderCard extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_UnderCard old) => old.centre != centre || old.top != top || old.right != right;
-}
-
-/// Words on the band in portrait instead of a call, as while a card is
-/// sent: a title over a line saying what goes on.
-class IkkiuchiBandWords extends StatelessWidget {
-  const IkkiuchiBandWords({super.key, required this.title, required this.line});
-
-  final String title, line;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(title,
-                style: const TextStyle(
-                    fontFamily: Fonts.display,
-                    fontSize: IkkiuchiBoardStyle.wordsTitle,
-                    height: 1,
-                    color: IkkiuchiBoardStyle.wordsTitleInk)),
-            const SizedBox(height: IkkiuchiBoardStyle.wordsGap),
-            Text(line,
-                style: const TextStyle(
-                    fontFamily: Fonts.ui,
-                    fontSize: IkkiuchiBoardStyle.wordsLine,
-                    height: 1,
-                    color: IkkiuchiBoardStyle.wordsLineInk)),
-          ]),
-        ),
-      );
 }
 
 /// Tobi's word as his card waits.

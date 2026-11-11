@@ -295,6 +295,28 @@ void main() {
     return row?.value;
   }
 
+  /// A tap on [button] of the dialog asking.
+  Future<void> answer(WidgetTester tester, String button) async {
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(button)));
+    await tester.pump();
+    await tester.pump(Motion.route);
+  }
+
+  /// The column's end button, read [label].
+  Finder endButton(String label) =>
+      find.descendant(of: find.byType(HoldToConfirmButton), matching: find.text(label));
+
+  /// The end button held as long as it takes.
+  Future<void> hold(WidgetTester tester) async {
+    final press = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(IkkiuchiMatchTuning.endHold);
+    await tester.pump(const Duration(milliseconds: 100));
+    await press.up();
+    await tester.pump();
+    await tester.pump(Motion.route);
+  }
+
   const ranked = IkkiuchiSetup(
       ranked: true,
       mode: IkkiuchiMode.rapid,
@@ -1048,10 +1070,13 @@ void main() {
   });
 
   group('the turn', () {
-    /// Starts a free match over the page on [phone] with the auto turn
+    /// Starts a match of [setup] over the page on [phone] with the auto turn
     /// [turn], noting the orientations it asks for.
     Future<(IkkiuchiMatchScreenState, List<Object?>)> playOn(WidgetTester tester, Screen phone,
-        {required bool turn}) async {
+        {required bool turn,
+        double fontScale = 1,
+        IkkiuchiSetup setup =
+            const IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15))}) async {
       final orientations = <Object?>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
         if (call.method == 'SystemChrome.setPreferredOrientations') orientations.add(call.arguments);
@@ -1061,14 +1086,20 @@ void main() {
       final p = await open(tester);
       await tester.runAsync(
           () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(autoTurn: turn))));
-      await showPage(tester, p, phone: phone);
-      const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 5, rows: 3, memorise: Duration(minutes: 15));
+      await showPage(tester, p, phone: phone, fontScale: fontScale);
       unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
           .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
       await tester.pump();
       await tester.pump(Motion.route);
       return (screen(tester), orientations);
     }
+
+    /// [f] inside the game column.
+    Finder inColumn(Finder f) => find.descendant(of: find.byType(IkkiuchiMatchColumn), matching: f);
+
+    /// Whether [inner] lies inside [outer].
+    bool within(Rect inner, Rect outer) =>
+        inner.left >= outer.left && inner.top >= outer.top && inner.right <= outer.right && inner.bottom <= outer.bottom;
 
     testWidgets('Settings › Side trips › Ikkiuchi: Auto turn screen is on until switched off, and is kept',
         (tester) async {
@@ -1108,6 +1139,98 @@ void main() {
       expect(tester.takeException(), isNull);
       await leave(tester);
       expect(orientations.last, ['DeviceOrientation.portraitUp']);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // On the user's phone at its text size, and on a small one at the
+    // largest.
+    for (final (phone, scale) in [(usersPhone, 1.1), (const Screen('360x640', Size(360, 640), 3), 1.3)]) {
+      testWidgets('held upright the game column lies along the band: 終了 and the score at its left end, the button '
+          'at its right, the call between them, clear of each other and of the cards (${phone.name}, text $scale)',
+          (tester) async {
+        final (state, _) = await playOn(tester, phone, turn: false, fontScale: scale);
+        final scene = state.flow!.scene, band = scene.band, words = scene.words;
+        expect(tester.getRect(find.byType(IkkiuchiMatchColumn)), band);
+        final end = tester.getRect(find.byType(HoldToConfirmButton));
+        final tobi = tester.getRect(inColumn(find.text(s.ikkiuchiTobi)));
+        final you = tester.getRect(inColumn(find.text(s.ikkiuchiYou)));
+        final done = tester.getRect(find.ancestor(of: inColumn(find.text(s.done)), matching: find.byType(InkButton)));
+        expect(inColumn(find.text('5')), findsNWidgets(2), reason: 'each side has 5 cards');
+        for (final part in [end, tobi, you, done]) {
+          expect(within(part, band), isTrue, reason: '$part lies in the band');
+          expect(part.overlaps(words), isFalse, reason: '$part is clear of the call');
+        }
+        expect(end.right, lessThan(tobi.left));
+        expect(tobi.right, lessThan(words.left));
+        expect(done.left, greaterThan(words.right));
+        expect(tobi.bottom, lessThan(band.center.dy), reason: "Tobi's count on his half");
+        expect(you.top, greaterThan(band.center.dy));
+        for (final card in scene.layout.cards) {
+          final box = card.box;
+          expect(card.side == IkkiuchiSide.player ? box.centre.y - box.hh >= band.bottom : box.centre.y + box.hh <= band.top,
+              isTrue,
+              reason: 'card ${card.id} is clear of the band');
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+
+    testWidgets("held upright the band's buttons work: 完了 once every card is placed, then 覚えた left of 並べ替え, "
+        '並べ替え ended by 完了', (tester) async {
+      final (state, _) = await playOn(tester, usersPhone, turn: false);
+      final flow = state.flow!, scene = flow.scene;
+      Finder button(String label) => inColumn(find.text(label));
+      await tester.tap(button(s.done), warnIfMissed: false);
+      await tester.pump();
+      expect(flow.stage, IkkiuchiStage.placing, reason: 'faded until every card is placed');
+      scene.opening.placeRest();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(button(s.done));
+      await tester.pump();
+      expect(flow.stage, IkkiuchiStage.memoryTime);
+      await tester.pump(IkkiuchiPlayTuning.relayoutGlide * 2);
+      expect(tester.getRect(button(s.ikkiuchiReady)).right, lessThan(tester.getRect(button(s.ikkiuchiArrange)).left),
+          reason: 'the last button rightmost');
+      await tester.tap(button(s.ikkiuchiArrange));
+      await tester.pump();
+      expect(scene.arrange.active, isTrue);
+      expect(find.text(s.ikkiuchiArranging), findsOneWidget, reason: 'the band says what goes on');
+      expect(button(s.ikkiuchiReady), findsNothing);
+      await tester.tap(button(s.done));
+      await tester.pump();
+      expect(scene.arrange.active, isFalse);
+      await tester.pump(IkkiuchiPlayTuning.relayoutGlide * 2);
+      await tester.tap(button(s.ikkiuchiReady));
+      await tester.pump();
+      expect(flow.stage, IkkiuchiStage.gameStart);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('held upright 投了 is on the band: two taps say to hold it; held it asks, Keep playing plays on and '
+        'Surrender loses', (tester) async {
+      final (state, _) = await playOn(tester, usersPhone, turn: false, setup: ranked);
+      final flow = state.flow!;
+      await toFirstRead(tester, flow);
+      expect(endButton(s.ikkiuchiSurrender), findsOneWidget);
+      expect(within(tester.getRect(find.byType(HoldToConfirmButton)), flow.scene.band), isTrue);
+      for (var i = 0; i < HoldConfirmTuning.hintTaps; i++) {
+        await tester.tap(find.byType(HoldToConfirmButton));
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      final seconds = (IkkiuchiMatchTuning.endHold.inMilliseconds / Duration.millisecondsPerSecond).round();
+      expect(find.text(s.ikkiuchiSurrenderHint(seconds)), findsOneWidget);
+      await tester.pump(HoldConfirmTuning.hintLife);
+      await hold(tester);
+      expect(find.text(s.ikkiuchiSurrenderTitle), findsOneWidget);
+      await answer(tester, s.ikkiuchiKeepPlaying);
+      expect(flow.stage.over, isFalse, reason: 'plays on');
+      await hold(tester);
+      await answer(tester, s.ikkiuchiSurrender);
+      expect(flow.stage, IkkiuchiStage.gameEnd);
+      await saved(tester, state.saving);
+      await toClosed(tester);
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -1500,28 +1623,6 @@ void main() {
     /// The system's back.
     Future<void> back(WidgetTester tester) async {
       await tester.binding.handlePopRoute();
-      await tester.pump();
-      await tester.pump(Motion.route);
-    }
-
-    /// A tap on [button] of the dialog asking.
-    Future<void> answer(WidgetTester tester, String button) async {
-      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(button)));
-      await tester.pump();
-      await tester.pump(Motion.route);
-    }
-
-    /// The column's end button, read [label].
-    Finder endButton(String label) =>
-        find.descendant(of: find.byType(HoldToConfirmButton), matching: find.text(label));
-
-    /// The end button held as long as it takes.
-    Future<void> hold(WidgetTester tester) async {
-      final press = await tester.startGesture(tester.getCenter(find.byType(HoldToConfirmButton)));
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(IkkiuchiMatchTuning.endHold);
-      await tester.pump(const Duration(milliseconds: 100));
-      await press.up();
       await tester.pump();
       await tester.pump(Motion.route);
     }
