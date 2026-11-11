@@ -1,5 +1,6 @@
 import 'dart:ui' show lerpDouble;
 
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/widgets.dart';
 
 import '../../config/design.dart';
@@ -69,7 +70,7 @@ class _IkkiuchiCallStripState extends State<IkkiuchiCallStrip> {
 /// The strip behind the words in [look]'s fill, solid under them and
 /// [IkkiuchiCallStyle.inset] beyond, fading out over
 /// [IkkiuchiCallStyle.fade] at each end; the words shrunk to fit where they
-/// are wider than its room.
+/// are wider than its room, however tall they are.
 class IkkiuchiStrip extends StatelessWidget {
   const IkkiuchiStrip({super.key, required this.look, required this.child});
 
@@ -81,7 +82,14 @@ class IkkiuchiStrip extends StatelessWidget {
         painter: _StripPainter(look.fill),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: IkkiuchiCallStyle.fade + IkkiuchiCallStyle.inset),
-          child: Center(widthFactor: 1, child: FittedBox(fit: BoxFit.scaleDown, child: child)),
+          child: Center(
+            widthFactor: 1,
+            child: OverflowBox(
+              maxHeight: double.infinity,
+              fit: OverflowBoxFit.deferToChild,
+              child: FittedBox(fit: BoxFit.scaleDown, child: child),
+            ),
+          ),
         ),
       );
 }
