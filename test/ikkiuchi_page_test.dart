@@ -2005,6 +2005,170 @@ void main() {
       });
     }
 
+    // Every stage of a match of 25 a side on the user's phone at text size
+    // 1, 1.1 and 1.3, in landscape and, with the auto turn off, held
+    // upright, to match_stages/: placing, every card placed, the memory
+    // time, 並べ替え, the greeting, a read, how it ended, a 送り札 each way,
+    // the 下の句 and the result; then a ranked match's 投了: its hint, held
+    // and the question after.
+    for (final (orient, phone) in [('landscape', usersPhoneLandscape), ('portrait', usersPhone)]) {
+      for (final (lang, scale) in [('ja', 1.0), ('ja', 1.1), ('en', 1.1), ('ja', 1.3)]) {
+        Future<IkkiuchiMatchFlow> startOn(WidgetTester tester, IkkiuchiSetup setup) async {
+          final p = await open(tester, lang: lang);
+          await tester.runAsync(() => p.updateSettings(
+              p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(autoTurn: orient == 'landscape'))));
+          await showPage(tester, p, phone: phone, fontScale: scale);
+          unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+              .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
+          await tester.pump();
+          await tester.pump(Motion.route);
+          final flow = screen(tester).flow!;
+          expect(flow.scene.layout.landscape, orient == 'landscape');
+          return flow;
+        }
+
+        Future<void> playUntil(WidgetTester tester, bool Function() done) async {
+          for (var i = 0; i < 1000 && !done(); i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          expect(done(), isTrue);
+        }
+
+        Future<void> shot(WidgetTester tester, String stage) async {
+          expect(tester.takeException(), isNull, reason: stage);
+          await capture(tester, 'match_stages/${orient}_$stage', lang);
+        }
+
+        testWidgets('match_stages_${orient}_${lang}_$scale', (tester) async {
+          const setup = IkkiuchiSetup.free(opponentRating: 1600, perSide: 25, rows: 3, memorise: Duration(minutes: 15));
+          final flow = await startOn(tester, setup), scene = flow.scene, send = scene.send;
+          flow.rating = null;
+          await play(tester, const Duration(seconds: 6));
+          await shot(tester, '01_placing');
+
+          scene.opening.placeRest();
+          await play(tester, IkkiuchiColumnStyle.blinkPeriod * 2);
+          await shot(tester, '02_placed');
+
+          flow.donePlacing();
+          await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+          await shot(tester, '03_memory');
+
+          flow.startArranging();
+          await play(tester, const Duration(milliseconds: 600));
+          await shot(tester, '04_arranging');
+          scene.arrange.finish();
+          await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+
+          flow.endMemoryTime();
+          await play(tester, const Duration(milliseconds: 600));
+          await shot(tester, '05_greeting');
+
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.kaminoku && scene.board.called != null);
+          await play(tester, Duration(milliseconds: scene.reader.call!.decidedAt ~/ 2));
+          await shot(tester, '06_read');
+
+          await play(tester, Duration(milliseconds: scene.reader.call!.decidedAt.round()));
+          final read = scene.board.cards.card(scene.board.called!).box.centre;
+          scene.pointer(PointerDownEvent(pointer: 7, position: Offset(read.x, read.y)));
+          await tester.pump(const Duration(milliseconds: 50));
+          scene.pointer(PointerUpEvent(pointer: 7, position: Offset(read.x, read.y)));
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.feedback);
+          await play(tester, IkkiuchiMatchTuning.feedbackIn + const Duration(milliseconds: 200));
+          await shot(tester, '07_feedback');
+
+          // The player sends Tobi a card: the one the rules ask for, else
+          // one by hand.
+          await playUntil(tester, () =>
+              flow.stage == IkkiuchiStage.sendingCard || (flow.stage.allowsHandSend && scene.atRest));
+          if (flow.stage != IkkiuchiStage.sendingCard) flow.sendByHand(IkkiuchiSide.player);
+          await play(tester, const Duration(milliseconds: 600));
+          await shot(tester, '08_sending');
+          final mine = scene.board.cards.card(scene.sides!.playerCards.first).box.centre;
+          final from = Offset(mine.x, mine.y);
+          send.dragStart(scene.sides!.playerCards.first, fromStack: false, at: from);
+          for (var i = 1; i <= 6; i++) {
+            send.dragTo(Offset.lerp(from, send.tobiSide.center, i / 6)!);
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+          await shot(tester, '09_sending_drag');
+          send.dragEnd();
+
+          // Tobi sends the player one by hand.
+          await playUntil(tester, () => flow.stage.allowsHandSend && scene.atRest);
+          flow.sendByHand(IkkiuchiSide.opponent);
+          await playUntil(tester, () => send.stage == IkkiuchiSendStage.waiting);
+          await play(tester, const Duration(milliseconds: 600));
+          await shot(tester, '10_waiting');
+          final card = send.card!;
+          final spot = send.rectOf(send.targets().freeSpots.first.$1)!;
+          send.dragStart(card, fromStack: true, at: scene.wait.center);
+          for (var i = 1; i <= 6; i++) {
+            send.dragTo(Offset.lerp(scene.wait.center, spot.center, i / 6)!);
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+          await shot(tester, '11_placing');
+          send.dragEnd();
+
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.shimonoku && flow.share > 0.4);
+          await shot(tester, '12_shimonoku');
+
+          flow.end();
+          await toResult(tester, flow);
+          await play(tester, const Duration(milliseconds: 1500));
+          await shot(tester, '13_result');
+          await leave(tester);
+          await tester.pumpWidget(const SizedBox());
+        });
+
+        testWidgets('match_surrender_${orient}_${lang}_$scale', (tester) async {
+          const setup = IkkiuchiSetup(
+              ranked: true,
+              mode: IkkiuchiMode.rapid,
+              opponent: IkkiuchiOpponent.tobi,
+              opponentRating: 1300,
+              perSide: 25,
+              rows: 3,
+              memorise: Duration(minutes: 15));
+          final flow = await startOn(tester, setup);
+          flow.rating = null;
+          flow.scene.opening
+            ..placeRest()
+            ..finishTobi();
+          flow.donePlacing();
+          await play(tester, IkkiuchiPlayTuning.relayoutGlide * 2);
+          await toFirstRead(tester, flow);
+          await play(tester, const Duration(milliseconds: 1500));
+          await shot(tester, '14_surrender');
+
+          final end = find.byType(HoldToConfirmButton);
+          for (var i = 0; i < HoldConfirmTuning.hintTaps; i++) {
+            await tester.tap(end);
+            await tester.pump(const Duration(milliseconds: 200));
+          }
+          await play(tester, const Duration(milliseconds: 400));
+          await shot(tester, '15_surrender_hint');
+          await play(tester, HoldConfirmTuning.hintLife);
+
+          final press = await tester.startGesture(tester.getCenter(end));
+          await play(tester, IkkiuchiMatchTuning.endHold ~/ 2);
+          await shot(tester, '16_surrender_hold');
+          await play(tester, IkkiuchiMatchTuning.endHold);
+          await press.up();
+          await tester.pump();
+          await tester.pump(Motion.route);
+          expect(find.text(S(lang).ikkiuchiSurrenderTitle), findsOneWidget);
+          await shot(tester, '17_surrender_asked');
+          await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(S(lang).ikkiuchiKeepPlaying)));
+          await tester.pump();
+          await tester.pump(Motion.route);
+          expect(flow.stage.over, isFalse);
+          await leave(tester);
+          await tester.pumpWidget(const SizedBox());
+        });
+      }
+    }
+
     for (final rows in [1, 2]) {
       testWidgets('match_${rows}row_moments', (tester) async {
         final perSide = rows == 1 ? IkkiuchiLayoutTuning.oneRowUpTo : IkkiuchiLayoutTuning.twoRowsUpTo;
