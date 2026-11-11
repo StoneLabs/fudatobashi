@@ -72,30 +72,29 @@ class IkkiuchiOpeningLayer extends StatelessWidget {
     );
   }
 
-  /// The hint beside the stack, over the player's half and clear of the
-  /// spots at its edges; above the stack where that leaves it too little
-  /// room.
+  /// The hint beside the stack, hanging from the top of its tag, between the stack and
+  /// the board's right end or the game column; under the tag where that
+  /// leaves it too little room.
   Widget _hint(BuildContext context, Rect stack) {
-    final field = scene.field, size = scene.layout.size, cardW = scene.layout.cardW;
-    final note = PlacingNote(text: S.of(context).ikkiuchiPlaceHint, look: _look);
-    final room = Rect.fromLTRB(field.left + cardW + IkkiuchiOpeningStyle.noteGap, scene.band.bottom,
-        math.min(stack.left, field.right - cardW) - IkkiuchiOpeningStyle.noteGap, field.bottom);
-    final beside = math.min(IkkiuchiOpeningStyle.noteWidth, room.width);
-    if (beside >= IkkiuchiOpeningStyle.noteMinWidth) {
+    final size = scene.layout.size, look = _look, gap = IkkiuchiOpeningStyle.noteGap;
+    final note = PlacingNote(text: S.of(context).ikkiuchiPlaceHint, look: look);
+    final tagTop = stack.bottom - look.stackTagOverlap, tagBottom = tagTop + look.stackTagRoom;
+    final left = stack.right + look.stackDepth * look.stackStep + gap;
+    final end = scene.layout.column?.left ?? size.x, room = end - gap - left;
+    if (room >= IkkiuchiOpeningStyle.noteMinWidth) {
       return Positioned(
-        right: size.x - room.right,
-        top: room.top,
-        width: beside,
-        height: room.height,
-        child: Align(alignment: Alignment.centerRight, child: note),
+        left: left,
+        width: math.min(IkkiuchiOpeningStyle.noteWidth, room),
+        top: tagTop,
+        child: Align(alignment: Alignment.topLeft, child: note),
       );
     }
-    final width = math.min(IkkiuchiOpeningStyle.noteWidth, size.x - 2 * IkkiuchiOpeningStyle.noteGap);
+    final width = math.min(IkkiuchiOpeningStyle.noteWidth, size.x - 2 * gap);
     return Positioned(
-      left: (stack.center.dx - width / 2).clamp(IkkiuchiOpeningStyle.noteGap, size.x - IkkiuchiOpeningStyle.noteGap - width),
+      left: (stack.center.dx - width / 2).clamp(gap, size.x - gap - width),
       width: width,
-      bottom: size.y - stack.top + IkkiuchiOpeningStyle.noteGap,
-      child: Align(alignment: Alignment.bottomCenter, child: note),
+      top: tagBottom + gap,
+      child: Align(alignment: Alignment.topCenter, child: note),
     );
   }
 

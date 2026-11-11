@@ -164,13 +164,13 @@ abstract final class IkkiuchiOpeningStyle {
   /// A placed card let go within [stackReach] of the stack goes back onto it.
   static const double stackReach = 6;
 
-  /// The hint before the first card is placed: beside the stack over the
-  /// player's half, at most [noteWidth] wide and [noteGap] clear of the
-  /// spots at the half's edges; above the stack where that leaves it less
-  /// than [noteMinWidth].
+  /// The hint before the first card is placed: beside the stack, hanging from
+  /// the top of its tag, at most [noteWidth] wide and [noteGap] clear of the stack and
+  /// of what is to its right; under the tag where that leaves it less than
+  /// [noteMinWidth].
   static const double noteGap = 18;
   static const double noteWidth = 330;
-  static const double noteMinWidth = 200;
+  static const double noteMinWidth = 120;
 }
 
 /// The match's greetings over the board (`IkkiuchiGreeting`), as play
