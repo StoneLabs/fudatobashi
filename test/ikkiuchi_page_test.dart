@@ -656,29 +656,6 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('a change of size deals the match afresh until a card is placed; then the board keeps its size',
-      (tester) async {
-    final p = await open(tester);
-    await showPage(tester, p);
-    final state = await start(tester, IkkiuchiSetup.firstFree);
-    final first = state.flow!;
-    final dpr = tester.view.devicePixelRatio;
-    tester.view.physicalSize = const Size(390, 832) * dpr;
-    await tester.pump();
-    final dealt = state.flow!;
-    expect(dealt, isNot(same(first)), reason: 'nothing placed yet: dealt afresh for the new size');
-    final opening = dealt.scene.opening;
-    final (_, r) = opening.targets().freeSpots.first;
-    opening.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
-    tester.view.physicalSize = const Size(384, 832) * dpr;
-    await tester.pump();
-    expect(state.flow, same(dealt), reason: 'a card placed: kept, scaled to fit');
-    expect(dealt.scene.sides!.playerCards, hasLength(1));
-    expect(tester.takeException(), isNull);
-    await leave(tester);
-    await tester.pumpWidget(const SizedBox());
-  });
-
   testWidgets("Tobi's sent card says to drag it or tap a spot, and a tap on a spot or a card places it there",
       (tester) async {
     final p = await open(tester);
@@ -1718,6 +1695,150 @@ void main() {
         });
       }
     }
+
+    group('turning the phone, the auto turn off', () {
+      /// Turns the phone [sideways] or upright, and runs on two frames.
+      Future<void> turnPhone(WidgetTester tester, {required bool sideways}) async {
+        useScreen(tester, sideways ? usersPhoneLandscape : usersPhone);
+        await play(tester, const Duration(milliseconds: 32));
+      }
+
+      /// Turns the phone the other way: the same match is laid out afresh
+      /// on the screen as it stands now, its sides, stage, scores and time
+      /// left kept.
+      Future<void> turn(WidgetTester tester, IkkiuchiMatchFlow flow) async {
+        final scene = flow.scene, landscape = scene.layout.landscape, sides = scene.sides;
+        final stage = flow.stage, tally = (flow.tally.player, flow.tally.opponent), left = flow.left;
+        await turnPhone(tester, sideways: !landscape);
+        final phone = landscape ? usersPhone : usersPhoneLandscape;
+        expect(screen(tester).flow, same(flow), reason: 'the same match');
+        expect(scene.layout.landscape, !landscape, reason: 'laid out the other way');
+        expect((scene.layout.size.x, scene.layout.size.y), (phone.size.width, phone.size.height));
+        expect(scene.sides, same(sides));
+        expect(flow.stage, stage);
+        expect((flow.tally.player, flow.tally.opponent), tally);
+        expect(left - flow.left, inInclusiveRange(0, 40), reason: 'its time runs on');
+        expect(tester.takeException(), isNull);
+      }
+
+      testWidgets('while placing, a card dragged is let go and the cards placed stay; turned twice and back; then '
+          'in the memory time, 並べ替え and a waiting 送り札, each with a card dragged', (tester) async {
+        final p = await open(tester);
+        await tester.runAsync(
+            () => p.updateSettings(p.settings.copyWith(ikkiuchi: p.settings.ikkiuchi.copyWith(autoTurn: false))));
+        await showPage(tester, p);
+        unawaited(Navigator.of(tester.element(find.byType(IkkiuchiPage)))
+            .push(MangaRoute<void>(builder: (_) => IkkiuchiMatchScreen(setup: setup, seed: 3))));
+        await tester.pump();
+        await tester.pump(Motion.route);
+        final flow = screen(tester).flow!, scene = flow.scene, opening = scene.opening;
+        for (var i = 0; i < 2; i++) {
+          final (_, r) = opening.targets().freeSpots.first;
+          opening.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
+        }
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide);
+        final placed = scene.sides!.playerCards.first;
+        Offset at(int card) {
+          final c = scene.board.cards.card(card).box.centre;
+          return Offset(c.x, c.y);
+        }
+
+        opening
+          ..dragStart(placed, fromStack: false, at: at(placed))
+          ..dragTo(at(placed) + const Offset(30, -30));
+        await turn(tester, flow);
+        expect(opening.drag, isNull, reason: 'let go');
+        expect(scene.sides!.playerCards, hasLength(2));
+        await turn(tester, flow);
+        await turn(tester, flow);
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide);
+        final card = scene.board.cards.card(placed);
+        expect(card.held, isFalse);
+        expect((card.box.centre - card.home.centre).length, closeTo(0, 0.01), reason: 'home on the board laid out afresh');
+
+        opening
+          ..placeRest()
+          ..finishTobi();
+        flow.donePlacing();
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide);
+        expect(flow.stage, IkkiuchiStage.memoryTime);
+        await turn(tester, flow);
+
+        final arrange = scene.arrange;
+        flow.startArranging();
+        expect(arrange.active, isTrue);
+        final moved = scene.sides!.playerCards.last;
+        arrange
+          ..dragStart(moved, fromStack: false, at: at(moved))
+          ..dragTo(at(moved) + const Offset(-20, 20));
+        await turn(tester, flow);
+        expect([arrange.drag, arrange.active], [null, true], reason: 'let go, still arranging');
+        arrange.finish();
+        await playUntil(tester, () => scene.atRest);
+
+        final send = scene.send;
+        flow.sendByHand(IkkiuchiSide.opponent);
+        await playUntil(tester, () => send.stage == IkkiuchiSendStage.waiting);
+        final sent = send.card!, wait = scene.wait.center;
+        send
+          ..dragStart(sent, fromStack: true, at: wait)
+          ..dragTo(wait + const Offset(0, 40));
+        await turn(tester, flow);
+        expect([send.drag, send.stage, send.card], [null, IkkiuchiSendStage.waiting, sent], reason: 'let go, waiting');
+        send.tap(send.rectOf(send.targets().freeSpots.first.$1)!.center);
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.memoryTime);
+        expect(scene.sides!.playerCards, contains(sent));
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets('turned in a read the board keeps its size until the read and the card taken are done; then '
+          'laid out the other way, on to the result, turned there too', (tester) async {
+        final p = await open(tester, lang: 'ja');
+        final flow = await laidOut(tester, p, 3, landscape: false);
+        final scene = flow.scene;
+        await downTo(tester, flow, IkkiuchiSide.player);
+        flow.endMemoryTime();
+        await toRead(tester, flow);
+        for (var i = 0; i < 10 && scene.board.called == null; i++) {
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.breakAfterShimonoku, reason: 'a からふだ goes by');
+          await toRead(tester, flow);
+        }
+        final reads = flow.reads.length;
+        await turnPhone(tester, sideways: true);
+        expect(scene.layout.landscape, isFalse, reason: 'the read goes on on the board as it was, scaled');
+        touch(flow, scene.board.called!);
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.feedback);
+        expect(scene.layout.landscape, isFalse, reason: 'the card taken still on it');
+        await playUntil(tester, () => scene.layout.landscape);
+        expect(flow.reads, hasLength(reads + 1), reason: 'once the read is over');
+        expect(flow.stage, IkkiuchiStage.closingUp, reason: 'once the card taken is off the board');
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.result);
+        await turn(tester, flow);
+        expect(flow.result, IkkiuchiResult.won);
+        await tester.pumpWidget(const SizedBox());
+      });
+
+      testWidgets("turned while Tobi's card for the player's full side is not sent, the match goes on", (tester) async {
+        final p = await open(tester, lang: 'ja');
+        const playing = IkkiuchiSetup.free(
+            opponentRating: 1600, perSide: IkkiuchiLayoutTuning.twoRowsUpTo, rows: 2, memorise: Duration(minutes: 15));
+        final flow = await laidOut(tester, p, 3, playing: playing, landscape: false);
+        final scene = flow.scene, send = scene.send;
+        while (scene.sides!.receives(IkkiuchiSide.player)) {
+          flow.sendByHand(IkkiuchiSide.opponent);
+          await playUntil(tester, () => send.stage == IkkiuchiSendStage.waiting);
+          send.tap(send.rectOf(send.targets().freeSpots.first.$1)!.center);
+          await playUntil(tester, () => flow.stage == IkkiuchiStage.memoryTime);
+        }
+        flow.sendByHand(IkkiuchiSide.opponent);
+        expect(flow.stage, IkkiuchiStage.noSend);
+        await turn(tester, flow);
+        await playUntil(tester, () => flow.stage == IkkiuchiStage.memoryTime);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      });
+    });
   });
 
   group('leaving', () {

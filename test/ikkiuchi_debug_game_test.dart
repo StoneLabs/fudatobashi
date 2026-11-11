@@ -396,6 +396,26 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('R lays the same match out the other way, the cards placed kept, as a turn of the phone does',
+        (tester) async {
+      final p = await open(tester);
+      await show(tester, p, const IkkiuchiDebugGame(seed: 5));
+      final f = flow(tester), opening = f.scene.opening;
+      final (_, r) = opening.targets().freeSpots.first;
+      opening.tap(Offset(r.x + r.w / 2, r.y + r.h / 2));
+      for (final landscape in [false, true]) {
+        await tester.tap(tool(IkkiuchiToolsStyle.turnLabel));
+        await tester.pump(frame);
+        await tester.pump(frame);
+        expect(flow(tester), same(f), reason: 'the same match');
+        expect(f.scene.layout.landscape, landscape);
+        expect(f.scene.sides!.playerCards, hasLength(1));
+        expect(f.stage, IkkiuchiStage.placing);
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('Tobi plays the deal in his form, drawn from its seed as in a match', (tester) async {
       final p = await open(tester);
       await show(tester, p, const IkkiuchiDebugGame(seed: 3));
@@ -841,20 +861,16 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('the kimariji voice stops when a new deal or turn replaces the match, and when the page goes',
-        (tester) async {
+    testWidgets('the kimariji voice stops when a new deal replaces the match, and when the page goes', (tester) async {
       final p = await open(tester);
       await toFirstRead(tester, p, 3);
       expect(voices.started, hasLength(1));
       expect(voices.stopped, 0);
-      for (final button in ['5', IkkiuchiToolsStyle.turnLabel]) {
-        final before = voices.stopped;
-        await tester.tap(tool(button));
-        await tester.pump(frame);
-        await tester.pump(frame);
-        expect(voices.stopped, before + 1, reason: '$button: the old match is torn down');
-        expect(stage(tester), IkkiuchiStage.placing, reason: '$button: a new match');
-      }
+      await tester.tap(tool('5'));
+      await tester.pump(frame);
+      await tester.pump(frame);
+      expect(voices.stopped, 1, reason: 'the old match is torn down');
+      expect(stage(tester), IkkiuchiStage.placing, reason: 'a new match');
       final before = voices.stopped;
       await tester.pumpWidget(const SizedBox());
       expect(voices.stopped, before + 1, reason: 'the page is gone');
