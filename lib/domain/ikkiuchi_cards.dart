@@ -78,18 +78,18 @@ class IkkiuchiCards {
     _world.setContactListener(_listener);
     for (final c in cards) {
       final card = IkkiuchiCard._(c.id, c.side, c.box, this);
-      card._body = _bodyAtHome(card);
+      card._body = _bodyAt(card, card.home);
       this.cards.add(card);
     }
   }
 
-  /// [card]'s body, lying asleep at its home.
-  box2d.Body _bodyAtHome(IkkiuchiCard card) {
+  /// [card]'s body, its home's size, lying asleep [at] where it is.
+  box2d.Body _bodyAt(IkkiuchiCard card, CardBox at) {
     final home = card.home;
     final body = _world.createBody(box2d.BodyDef(
       type: box2d.BodyType.dynamic,
-      position: _m(home.centre),
-      angle: home.angle,
+      position: _m(at.centre),
+      angle: at.angle,
       linearDamping: IkkiuchiPhysicsTuning.damping,
       angularDamping: IkkiuchiPhysicsTuning.spinDamping,
       isAwake: false,
@@ -144,7 +144,13 @@ class IkkiuchiCards {
 
   /// Sends [card] off as taken at [velocity] (dp/s) and [spin] (rad/s): it
   /// flies freely, knocking the cards it meets, and the fist passes it by.
+  /// One gliding home flies off from where it is on its way.
   void launch(IkkiuchiCard card, Vec velocity, double spin) {
+    if (_gliding.remove(card) != null) {
+      card
+        .._body = _bodyAt(card, card.box)
+        .._last = null;
+    }
     final body = card._body;
     if (body == null) return;
     card.taken = true;
@@ -295,7 +301,7 @@ class IkkiuchiCards {
       ..shown = 1
       .._last = null
       .._stirred = false
-      .._body = _bodyAtHome(card);
+      .._body = _bodyAt(card, card.home);
   }
 
   /// [card] is taken where it lies: out of the sim, it fades there.
@@ -322,7 +328,7 @@ class IkkiuchiCards {
     if (t < 1) return;
     for (final card in _gliding.keys) {
       card
-        .._body = _bodyAtHome(card)
+        .._body = _bodyAt(card, card.home)
         .._last = null
         .._stirred = false;
     }

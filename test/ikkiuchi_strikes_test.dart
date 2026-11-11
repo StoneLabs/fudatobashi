@@ -489,6 +489,25 @@ void main() {
       expect(cards.card(2).movedFrom(cards.card(2).home, dp: 1, radians: 0.01), isTrue);
     });
 
+    test('a card taken on its way home flies off from where it is, and is gone', () {
+      final cards = IkkiuchiCards([
+        (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
+      ], board: const Vec(384, 832), cardW: 38);
+      final card = cards.card(1);
+      cards.glideFrom({1: const CardBox(Vec(120, 600), 19, 27)}, ms: 250, ease: (t) => t);
+      cards.step();
+      final at = card.box.centre;
+      cards.launch(card, const Vec(-3000, 400), 4);
+      expect(card.taken, isTrue);
+      expect(cards.gliding, isFalse, reason: 'its glide home is over');
+      cards.step();
+      expect(card.box.centre.x, lessThan(at.x), reason: 'off from where it was on its way, not from home');
+      for (var i = 0; i < 600; i++) {
+        cards.step();
+      }
+      expect(card.onBoard, isFalse);
+    });
+
     test('a taken card that stops on the field fades from it', () {
       final cards = IkkiuchiCards([
         (id: 1, side: IkkiuchiSide.player, box: const CardBox(Vec(200, 600), 19, 27)),
