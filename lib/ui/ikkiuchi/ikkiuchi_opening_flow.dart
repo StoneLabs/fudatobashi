@@ -173,7 +173,7 @@ class IkkiuchiOpeningFlow {
   }
 
   /// The player is done laying out their side: the board is laid out for
-  /// play, the stack's room gone.
+  /// play, the stack gone.
   void finish() {
     if (!_placing) return;
     _placing = false;

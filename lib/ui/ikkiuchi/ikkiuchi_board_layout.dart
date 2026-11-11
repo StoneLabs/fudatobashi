@@ -239,9 +239,9 @@ class IkkiuchiBoardLayout {
   final Vec _origin;
 
   /// The board laid out afresh with these sides, the [onTop] cards on top,
-  /// by the same rules on the same board, its cards no bigger than they
-  /// started and the field at least [need] card widths wide, for the
-  /// opening while [opening] says so, else as it was.
+  /// by the same rules on the same board, in portrait its cards no bigger
+  /// than they started and the field at least [need] card widths wide, for
+  /// the opening while [opening] says so, else as it was.
   IkkiuchiBoardLayout withSides(
           {required List<IkkiuchiRow> tobiRows,
           required List<IkkiuchiRow> playerRows,
