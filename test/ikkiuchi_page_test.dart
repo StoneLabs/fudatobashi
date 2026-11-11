@@ -65,6 +65,7 @@ import 'package:fudatobashi/domain/ikkiuchi_send.dart';
 import 'package:fudatobashi/domain/ikkiuchi_side.dart';
 import 'package:fudatobashi/domain/placing.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_board_painter.dart';
+import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_board.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_send_flow.dart';
 import 'package:fudatobashi/ui/ikkiuchi/ikkiuchi_match_column.dart';
@@ -1714,6 +1715,7 @@ void main() {
         expect(screen(tester).flow, same(flow), reason: 'the same match');
         expect(scene.layout.landscape, !landscape, reason: 'laid out the other way');
         expect((scene.layout.size.x, scene.layout.size.y), (phone.size.width, phone.size.height));
+        expect(tester.getSize(find.byType(IkkiuchiMatchBoard)), phone.size, reason: 'the board shows at that size');
         expect(scene.sides, same(sides));
         expect(flow.stage, stage);
         expect((flow.tally.player, flow.tally.opponent), tally);
@@ -1762,7 +1764,10 @@ void main() {
         flow.donePlacing();
         await play(tester, IkkiuchiPlayTuning.relayoutGlide);
         expect(flow.stage, IkkiuchiStage.memoryTime);
+        await capture(tester, 'turn_memory_1_landscape', 'en');
         await turn(tester, flow);
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide);
+        await capture(tester, 'turn_memory_2_portrait', 'en');
 
         final arrange = scene.arrange;
         flow.startArranging();
@@ -1805,14 +1810,19 @@ void main() {
           await toRead(tester, flow);
         }
         final reads = flow.reads.length;
+        await capture(tester, 'turn_read_1_portrait', 'ja');
         await turnPhone(tester, sideways: true);
+        await capture(tester, 'turn_read_2_waiting', 'ja');
         expect(scene.layout.landscape, isFalse, reason: 'the read goes on on the board as it was, scaled');
+        expect(tester.getSize(find.byType(IkkiuchiMatchBoard)), usersPhone.size);
         touch(flow, scene.board.called!);
         await playUntil(tester, () => flow.stage == IkkiuchiStage.feedback);
         expect(scene.layout.landscape, isFalse, reason: 'the card taken still on it');
         await playUntil(tester, () => scene.layout.landscape);
         expect(flow.reads, hasLength(reads + 1), reason: 'once the read is over');
         expect(flow.stage, IkkiuchiStage.closingUp, reason: 'once the card taken is off the board');
+        await play(tester, IkkiuchiPlayTuning.relayoutGlide);
+        await capture(tester, 'turn_read_3_landscape', 'ja');
         await playUntil(tester, () => flow.stage == IkkiuchiStage.result);
         await turn(tester, flow);
         expect(flow.result, IkkiuchiResult.won);

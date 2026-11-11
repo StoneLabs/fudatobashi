@@ -409,6 +409,8 @@ void main() {
         await tester.pump(frame);
         expect(flow(tester), same(f), reason: 'the same match');
         expect(f.scene.layout.landscape, landscape);
+        final size = f.scene.layout.size;
+        expect(tester.getSize(find.byType(IkkiuchiMatchBoard)), Size(size.x, size.y), reason: 'the board shows so');
         expect(f.scene.sides!.playerCards, hasLength(1));
         expect(f.stage, IkkiuchiStage.placing);
       }

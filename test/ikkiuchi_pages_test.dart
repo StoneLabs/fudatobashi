@@ -456,7 +456,8 @@ void main() {
       }
       await tester.tap(find.text('Rotate'));
       await tester.pump(frame);
-      expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns');
+      await tester.pump(frame);
+      expect(find.byType(RotatedBox), findsOneWidget, reason: 'only the board turns, on the frame after');
       expect(scene(tester).layout.landscape, isTrue);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
