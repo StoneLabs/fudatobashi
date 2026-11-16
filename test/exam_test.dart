@@ -23,6 +23,7 @@ import 'package:fudatobashi/l10n/strings.dart';
 import 'package:fudatobashi/l10n/summary_strings.dart';
 import 'package:fudatobashi/state/play_config.dart';
 import 'package:fudatobashi/state/progress.dart';
+import 'package:fudatobashi/state/settings.dart';
 import 'package:fudatobashi/state/scope.dart';
 import 'package:fudatobashi/ui/exam/exam_board.dart';
 import 'package:fudatobashi/ui/exam/exam_dev.dart';
@@ -31,6 +32,7 @@ import 'package:fudatobashi/ui/exam/exam_opening.dart';
 import 'package:fudatobashi/ui/exam/exam_screen.dart';
 import 'package:fudatobashi/ui/exam/exam_sheets.dart';
 import 'package:fudatobashi/ui/manga/manga.dart';
+import 'package:fudatobashi/ui/play/kimariji_chip.dart';
 import 'package:fudatobashi/ui/play/swipe_deck.dart';
 import 'package:fudatobashi/ui/results/celebration_sequence.dart';
 import 'package:fudatobashi/ui/results/graduation_overlay.dart';
@@ -220,6 +222,7 @@ void main() {
       await swipe(tester, session);
       await tester.tap(find.text('UNDO'));
       await tester.pump(const Duration(milliseconds: 16));
+      await swipe(tester, session);
     }
     while (!session.finished) {
       await swipe(tester, session);
@@ -238,6 +241,79 @@ void main() {
     expect(p.runs.last.completed, isTrue);
     expect(p.graduated, isFalse);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('a card costs one penalty at most', () {
+    const one = Duration(milliseconds: ExamTuning.missPenaltyMs);
+
+    /// The penalties on the scoreboard so far.
+    Duration penalty(WidgetTester tester) => tester.widget<Scoreboard>(find.byType(Scoreboard)).penalty;
+
+    /// The penalty pops sent up so far.
+    Object? pops(WidgetTester tester) => tester.widget<PenaltyPop>(find.byType(PenaltyPop)).key;
+
+    /// To GO, with don't know on its own button.
+    Future<PlaySession> start(WidgetTester tester) async {
+      final p = await open(tester);
+      await tester.runAsync(() => p.updateSettings(p.settings.copyWith(dontKnowInput: DontKnowInput.button)));
+      await tester.binding.setSurfaceSize(usersPhone.size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpHome(tester, p);
+      await pushExam(tester, five, even(const Duration(minutes: 1), five.length));
+      return toGo(tester);
+    }
+
+    Future<void> tapOn(WidgetTester tester, Finder target) async {
+      await tester.tap(target);
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    final dontKnow = find.text("DON'T REMEMBER");
+    final undo = find.text('UNDO');
+
+    testWidgets("don't know costs a penalty", (tester) async {
+      final session = await start(tester);
+      await tapOn(tester, dontKnow);
+      expect(session.attempts.single.outcome, Outcome.dontKnow);
+      expect(penalty(tester), one);
+      expect(pops(tester), const ValueKey(1));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets("undo, then don't know on the card undone: one penalty", (tester) async {
+      final session = await start(tester);
+      await swipe(tester, session);
+      await swipe(tester, session);
+      await tapOn(tester, undo);
+      expect(penalty(tester), one, reason: 'the undone card');
+      await tapOn(tester, dontKnow);
+      expect(session.attempts.last.outcome, Outcome.dontKnow);
+      expect(penalty(tester), one, reason: 'the same card again');
+      expect(pops(tester), const ValueKey(1));
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('undo back and forth on one card, then marking it wrong: one penalty', (tester) async {
+      final session = await start(tester);
+      await swipe(tester, session);
+      for (var i = 0; i < 3; i++) {
+        await swipe(tester, session);
+        await tapOn(tester, undo);
+      }
+      expect(session.undone, hasLength(3));
+      expect(penalty(tester), one);
+      await swipe(tester, session);
+      await tapOn(tester, find.byType(KimarijiChip));
+      expect(session.lastAttempt!.wrong, isTrue);
+      expect(penalty(tester), one, reason: 'still the same card');
+      expect(pops(tester), const ValueKey(1));
+
+      await tapOn(tester, dontKnow);
+      expect(penalty(tester), one * 2, reason: 'another card');
+      expect(pops(tester), const ValueKey(2));
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   testWidgets("Tobi finishing first: play goes on until the player's time with penalties reaches his", (tester) async {

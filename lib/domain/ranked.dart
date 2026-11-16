@@ -35,7 +35,7 @@ class RankedScore {
 
   final Duration clock;
 
-  /// Cards missed or marked wrong, an undone swipe each time.
+  /// Cards missed, marked wrong or undone, each card once.
   final int misses;
 
   /// Cards never swiped (the run left early), each counted as a miss.
@@ -43,8 +43,9 @@ class RankedScore {
   final Duration forfeitPerCard;
   final int penaltyMs;
 
-  /// Misses or cards marked wrong in [run], counting each undone swipe.
-  static int missesOf(PlaySession run) => run.attempts.where((a) => a.isMiss).length + run.undone.length;
+  /// Cards in [run] missed, marked wrong or undone: each card once, however
+  /// often it was undone or marked.
+  static int missesOf(PlaySession run) => {for (final a in run.swipes) if (a.isMiss) a.index}.length;
 
   Duration get penalty => Duration(milliseconds: (misses + cardsLeft) * penaltyMs);
 

@@ -31,9 +31,9 @@ import 'exam_sheets.dart';
 /// screen at [tobi]'s pace while the player plays the bottom half.
 ///
 /// It opens on Tobi's よろしくお願いします and a count of three; at GO the
-/// player's first card is revealed and both clocks start. Every miss, card
-/// marked wrong or undone swipe adds [ExamTuning.missPenaltyMs] to the
-/// player's time, and each of Tobi's mistakes to his. Once Tobi has
+/// player's first card is revealed and both clocks start. Every card missed,
+/// marked wrong or undone adds [ExamTuning.missPenaltyMs] to the player's
+/// time, once however often, and each of Tobi's mistakes to his. Once Tobi has
 /// finished, the player loses the moment their time reaches his. Once the
 /// player has finished, Tobi plays on: the player wins as his time passes
 /// theirs, and loses if he finishes first. A win goes on to [ResultsScreen]
